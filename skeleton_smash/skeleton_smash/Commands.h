@@ -7,7 +7,8 @@
 #define COMMAND_MAX_ARGS (20)
 
 class Command {
-	// TODO: Add your data members
+protected:
+	std::string m_cmd_line;
 public:
 	Command(const char* cmd_line);
 
@@ -26,6 +27,26 @@ public:
 
 	virtual ~BuiltInCommand() {
 	}
+};
+
+class ChangePromptCommand : public BuiltInCommand {
+public:
+	ChangePromptCommand(const char* cmd_line);
+
+	virtual ~ChangePromptCommand() {
+	}
+
+	void execute() override;
+};
+
+class GetCurrDirCommand : public BuiltInCommand {
+public:
+	GetCurrDirCommand(const char* cmd_line);
+
+	virtual ~GetCurrDirCommand() {
+	}
+
+	void execute() override;
 };
 
 class ExternalCommand : public Command {
@@ -65,16 +86,6 @@ class ChangeDirCommand : public BuiltInCommand {
 	ChangeDirCommand(const char* cmd_line, char** plastPwd);
 
 	virtual ~ChangeDirCommand() {
-	}
-
-	void execute() override;
-};
-
-class GetCurrDirCommand : public BuiltInCommand {
-public:
-	GetCurrDirCommand(const char* cmd_line);
-
-	virtual ~GetCurrDirCommand() {
 	}
 
 	void execute() override;
