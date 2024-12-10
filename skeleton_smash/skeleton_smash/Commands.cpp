@@ -88,7 +88,7 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command* SmallShell::CreateCommand(const char* cmd_line) {
+Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
 	string cmd_s = _trim(string(cmd_line));
 	string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 	if (firstWord.compare("chprompt") == 0) {
@@ -106,10 +106,8 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
 	return nullptr;
 }
 
-void SmallShell::executeCommand(const char* cmd_line) {
-    // TODO: Add your implementation here
-    // for example:
-    // Command* cmd = CreateCommand(cmd_line);
-    // cmd->execute();
-    // Please note that you must fork smash process for some commands (e.g., external commands....)
+void SmallShell::executeCommand(const char* cmd_line) { // in progress...
+	Command* cmd = CreateCommand(cmd_line);
+	cmd->execute();
+	// Please note that you must fork smash process for some commands (e.g., external commands....)
 }
