@@ -1,0 +1,5 @@
+-what's the curr dir should be once you open the smash and should we initialize it somehow?
+
+-cntrl C, what should we do with that?
+
+-signals and forks...
