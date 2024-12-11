@@ -124,3 +124,17 @@ void ChangePromptCommand::execute() override {
 		SmallShell::getInstance().setPrompt("smash");
 	}
 }
+/*
+Aviv's verision:
+void ChangePromptCommand::execute(const std::vector<std::string>& args) override {      -     will recieve an array with two params, one for the command it self and one for what to change to
+    if (args.size() < 2) {    -      if only the chprompt passed then the user passed nothing
+        shellPrompt = "smash> ";      -         shellprompt will be a class variable changed here
+        std::cout << "Prompt restored to default: " << shellPrompt << "\n";
+        return;
+    }
+    shellPrompt = args[1];     -         changes to what the user wants.
+    std::cout << "Prompt changed to: " << shellPrompt << "\n";
+}
+
+
+*/
