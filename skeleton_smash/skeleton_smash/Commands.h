@@ -39,6 +39,23 @@ public:
 	void execute() override;
 };
 
+class ChangeDirCommand : public BuiltInCommand {
+private:
+	static std::string lastWorkingDir;
+
+public:
+	ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+
+	virtual ~ChangeDirCommand() {}
+
+	void execute() override {}
+	
+};
+
+// Initialize the static member variable
+std::string ChangeDirCommand::lastWorkingDir = "";
+
+
 class GetCurrDirCommand : public BuiltInCommand {
 public:
 	GetCurrDirCommand(const char* cmd_line);

@@ -109,6 +109,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
 void SmallShell::executeCommand(const char* cmd_line) { // in progress...
 	Command* cmd = CreateCommand(cmd_line);
 	cmd->execute();
+	// we might need to delete the command or store it for later usage or deletion
 	// Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
@@ -124,17 +125,57 @@ void ChangePromptCommand::execute() override {
 		SmallShell::getInstance().setPrompt("smash");
 	}
 }
-/*
-Aviv's verision:
-void ChangePromptCommand::execute(const std::vector<std::string>& args) override {      -     will recieve an array with two params, one for the command it self and one for what to change to
-    if (args.size() < 2) {    -      if only the chprompt passed then the user passed nothing
-        shellPrompt = "smash> ";      -         shellprompt will be a class variable changed here
-        std::cout << "Prompt restored to default: " << shellPrompt << "\n";
-        return;
-    }
-    shellPrompt = args[1];     -         changes to what the user wants.
-    std::cout << "Prompt changed to: " << shellPrompt << "\n";
+
+void GetCurrDirCommand::execute() override {
+	char cwd[COMMAND_MAX_LENGTH];
+	if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+		std::cout << cwd << std::endl;
+	}
+	else {
+		perror("smash error: getcwd failed");
+	}
 }
 
+void ShowPidCommand::execute() override {
+	std::cout << "smash pid is " << getpid() << std::endl;
+}
 
-*/
+void ChangeDirCommand::execute() override {
+	std::istringstream iss(this->m_cmd_line);
+	std::string command, path;
+
+	iss >> command; // Skip the "cd" command
+	if (!(iss >> path)) {
+		// No arguments provided
+		return; // Do nothing
+	}
+
+	std::string secondArg;
+	if (iss >> secondArg) {
+		// Too many arguments
+		std::cerr << "smash error: cd: too many arguments" << std::endl;
+		return;
+	}
+
+	if (path == "-") {
+		// Handle the special `-` argument
+		if (lastWorkingDir.empty()) {
+			std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+			return;
+		}
+		path = lastWorkingDir;
+	}
+
+	char currentDir[COMMAND_MAX_LENGTH];
+	if (getcwd(currentDir, sizeof(currentDir)) == nullptr) {
+		perror("smash error: getcwd failed");
+		return;
+	}
+
+	if (chdir(path.c_str()) == -1) {
+		perror("smash error: chdir failed");
+		return;
+	}
+
+	lastWorkingDir = std::string(currentDir); // Update the last working directory
+}
