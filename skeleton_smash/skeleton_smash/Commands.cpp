@@ -75,8 +75,6 @@ void _removeBackgroundSign(char* cmd_line) {
 	cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-// TODO: Add your implementation for classes in Commands.h 
-
 SmallShell::SmallShell() {
 	// TODO: add your implementation
 }
@@ -94,11 +92,11 @@ Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
 	if (firstWord.compare("chprompt") == 0) {
 		return new ChangePromptCommand(cmd_line);
 	}
-	else if (firstWord.compare("pwd") == 0) {
-		return new GetCurrDirCommand(cmd_line);
-	}
 	else if (firstWord.compare("showpid") == 0) {
 		return new ShowPidCommand(cmd_line);
+	}
+	else if (firstWord.compare("pwd") == 0) {
+		return new GetCurrDirCommand(cmd_line);
 	}
 	else if (firstWord.compare("cd") == 0) {
 		return new ChangeDirCommand(cmd_line); // Add this
@@ -129,6 +127,10 @@ void ChangePromptCommand::execute() override {
 	}
 }
 
+void ShowPidCommand::execute() override {
+	std::cout << "smash pid is " << getpid() << std::endl;
+}
+
 void GetCurrDirCommand::execute() override {
 	char cwd[COMMAND_MAX_LENGTH];
 	if (getcwd(cwd, sizeof(cwd)) != nullptr) {
@@ -139,59 +141,46 @@ void GetCurrDirCommand::execute() override {
 	}
 }
 
-void ShowPidCommand::execute() override {
-	std::cout << "smash pid is " << getpid() << std::endl;
-}
+void ChangeDirCommand::execute() override {
+	std::istringstream iss(this->m_cmd_line);
+	std::string command, path;
 
-class ChangeDirCommand : public BuiltInCommand {
-private:
-	char** plastPwd; // Pointer to the last working directory variable
-
-public:
-	ChangeDirCommand(const char* cmd_line, char** plastPwd)
-		: BuiltInCommand(cmd_line), plastPwd(plastPwd) {}
-
-	void execute() override {
-		std::istringstream iss(this->m_cmd_line);
-		std::string command, path;
-
-		iss >> command; // Skip the "cd" command
-		if (!(iss >> path)) {
-			// No arguments provided
-			return; // Do nothing
-		}
-
-		std::string secondArg;
-		if (iss >> secondArg) {
-			// Too many arguments
-			std::cerr << "smash error: cd: too many arguments" << std::endl;
-			return;
-		}
-
-		if (path == "-") {
-			// Handle the special `-` argument
-			if (*plastPwd == nullptr) {
-				std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
-				return;
-			}
-			path = std::string(*plastPwd);
-		}
-
-		char currentDir[COMMAND_MAX_LENGTH];
-		if (getcwd(currentDir, sizeof(currentDir)) == nullptr) {
-			perror("smash error: getcwd failed");
-			return;
-		}
-
-		if (chdir(path.c_str()) == -1) {
-			perror("smash error: chdir failed");
-			return;
-		}
-
-		// Update plastPwd with the old working directory
-		if (*plastPwd != nullptr) {
-			free(*plastPwd); // Free the previous memory
-		}
-		*plastPwd = strdup(currentDir); // Store the current directory as lastPwd
+	iss >> command; // Extract the "cd" command
+	if (!(iss >> path)) {
+		// No arguments provided, no action
+		return;
 	}
-};
+
+	std::string extraArg;
+	if (iss >> extraArg) {
+		// Too many arguments
+		std::cerr << "smash error: cd: too many arguments" << std::endl;
+		return;
+	}
+
+	if (path == "-") {
+		// Handle `cd -`
+		if (*plastPwd == nullptr) {
+			std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+			return;
+		}
+		path = std::string(*plastPwd); // Set path to the last working directory
+	}
+
+	char currentDir[COMMAND_MAX_LENGTH];
+	if (getcwd(currentDir, sizeof(currentDir)) == nullptr) {
+		perror("smash error: getcwd failed");
+		return;
+	}
+
+	if (chdir(path.c_str()) == -1) {
+		perror("smash error: chdir failed");
+		return;
+	}
+
+	// Update `plastPwd` with the old working directory
+	if (*plastPwd != nullptr) {
+		free(*plastPwd); // Free previously allocated memory
+	}
+	*plastPwd = strdup(currentDir); // Save the current directory as the "old" directory
+}

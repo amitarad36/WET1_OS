@@ -39,20 +39,15 @@ public:
 	void execute() override;
 };
 
-class ChangeDirCommand : public BuiltInCommand {
-private:
-	static std::string lastWorkingDir;
-
+class ShowPidCommand : public BuiltInCommand {
 public:
-	ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+	ShowPidCommand(const char* cmd_line);
 
-	virtual ~ChangeDirCommand() {}
+	virtual ~ShowPidCommand() {
+	}
 
-	void execute() override {}
-	
+	void execute() override;
 };
-
-
 
 class GetCurrDirCommand : public BuiltInCommand {
 public:
@@ -60,6 +55,18 @@ public:
 
 	virtual ~GetCurrDirCommand() {
 	}
+
+	void execute() override {}
+};
+
+class ChangeDirCommand : public BuiltInCommand {
+private:
+	char** plastPwd;
+public:
+	ChangeDirCommand(const char* cmd_line, char** plastPwd)
+		: BuiltInCommand(cmd_line), plastPwd(plastPwd) {}
+
+	virtual ~ChangeDirCommand() {}
 
 	void execute() override;
 };
@@ -91,29 +98,6 @@ public:
 	explicit RedirectionCommand(const char* cmd_line);
 
 	virtual ~RedirectionCommand() {
-	}
-
-	void execute() override;
-};
-
-class ChangeDirCommand : public BuiltInCommand {
-private:
-	char** plastPwd;
-public:
-	ChangeDirCommand(const char* cmd_line, char** plastPwd)
-		: BuiltInCommand(cmd_line), plastPwd(plastPwd) {}
-
-	virtual ~ChangeDirCommand() {
-	}
-
-	void execute() override;
-};
-
-class ShowPidCommand : public BuiltInCommand {
-public:
-	ShowPidCommand(const char* cmd_line);
-
-	virtual ~ShowPidCommand() {
 	}
 
 	void execute() override;
