@@ -52,8 +52,6 @@ public:
 	
 };
 
-// Initialize the static member variable
-std::string ChangeDirCommand::lastWorkingDir = "";
 
 
 class GetCurrDirCommand : public BuiltInCommand {
@@ -99,8 +97,11 @@ public:
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-	// TODO: Add your data members public:
-	ChangeDirCommand(const char* cmd_line, char** plastPwd);
+private:
+	char** plastPwd;
+public:
+	ChangeDirCommand(const char* cmd_line, char** plastPwd)
+		: BuiltInCommand(cmd_line), plastPwd(plastPwd) {}
 
 	virtual ~ChangeDirCommand() {
 	}
