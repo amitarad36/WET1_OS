@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstring>
+
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
@@ -29,51 +30,21 @@ public:
 	}
 };
 
-class ChangePromptCommand : public BuiltInCommand {
-public:
-	ChangePromptCommand(const char* cmd_line);
-
-	virtual ~ChangePromptCommand() {
-	}
-
-	void execute() override;
-};
-
-class ShowPidCommand : public BuiltInCommand {
-public:
-	ShowPidCommand(const char* cmd_line);
-
-	virtual ~ShowPidCommand() {
-	}
-
-	void execute() override;
-};
-
-class GetCurrDirCommand : public BuiltInCommand {
-public:
-	GetCurrDirCommand(const char* cmd_line);
-
-	virtual ~GetCurrDirCommand() {
-	}
-
-	void execute() override;
-};
-
-class ChangeDirCommand : public BuiltInCommand {
-public:
-	ChangeDirCommand(const char* cmd_line)
-		: BuiltInCommand(cmd_line) {}
-
-	virtual ~ChangeDirCommand() {}
-
-	void execute() override;
-};
-
 class ExternalCommand : public Command {
 public:
 	ExternalCommand(const char* cmd_line);
 
 	virtual ~ExternalCommand() {
+	}
+
+	void execute() override;
+};
+
+class ChangePromptCommand : public BuiltInCommand {
+public:
+	ChangePromptCommand(const char* cmd_line);
+
+	virtual ~ChangePromptCommand() {
 	}
 
 	void execute() override;
@@ -96,6 +67,36 @@ public:
 	explicit RedirectionCommand(const char* cmd_line);
 
 	virtual ~RedirectionCommand() {
+	}
+
+	void execute() override;
+};
+
+class ChangeDirCommand : public BuiltInCommand {
+public:
+	ChangeDirCommand(const char* cmd_line)
+		: BuiltInCommand(cmd_line) {}
+
+	virtual ~ChangeDirCommand() {}
+
+	void execute() override;
+};
+
+class GetCurrDirCommand : public BuiltInCommand {
+public:
+	GetCurrDirCommand(const char* cmd_line);
+
+	virtual ~GetCurrDirCommand() {
+	}
+
+	void execute() override;
+};
+
+class ShowPidCommand : public BuiltInCommand {
+public:
+	ShowPidCommand(const char* cmd_line);
+
+	virtual ~ShowPidCommand() {
 	}
 
 	void execute() override;
