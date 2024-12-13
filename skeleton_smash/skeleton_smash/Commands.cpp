@@ -109,7 +109,7 @@ void SmallShell::executeCommand(const char* cmd_line) { // in progress...
 	// Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
-void ChangePromptCommand::execute() override {
+void ChangePromptCommand::execute()  {
 	std::istringstream iss(m_cmd_line);
 	std::string command, newPrompt;
 
@@ -122,11 +122,11 @@ void ChangePromptCommand::execute() override {
 	}
 }
 
-void ShowPidCommand::execute() override {
+void ShowPidCommand::execute()  {
 	std::cout << "smash pid is " << getpid() << std::endl;
 }
 
-void GetCurrDirCommand::execute() override {
+void GetCurrDirCommand::execute()  {
 	char cwd[COMMAND_MAX_LENGTH];
 	if (getcwd(cwd, sizeof(cwd)) != nullptr) {
 		std::cout << cwd << std::endl;
@@ -136,7 +136,7 @@ void GetCurrDirCommand::execute() override {
 	}
 }
 
-void ChangeDirCommand::execute() override {
+void ChangeDirCommand::execute()  {
 	std::istringstream iss(this->m_cmd_line);
 	std::string command, path;
 
