@@ -21,62 +21,6 @@ public:
 	// TODO: Add your extra methods if needed
 };
 
-class SmallShell {
-private:
-	std::string m_prompt;
-	char* lastPwd;
-	JobsList jobsList;
-
-	SmallShell() : m_prompt("smash"), lastPwd(nullptr) {}
-
-public:
-	Command* CreateCommand(const char* cmd_line);
-
-	SmallShell(SmallShell const&) = delete; // Disable copy constructor
-
-	void operator=(SmallShell const&) = delete; // Disable assignment operator
-
-	static SmallShell& getInstance() // Make SmallShell singleton
-	{
-		static SmallShell instance; // Guaranteed to be destroyed.
-		// Instantiated on first use.
-		return instance;
-	}
-
-	~SmallShell() {
-		if (lastPwd) {
-			free(lastPwd); // Free memory allocated for lastPwd
-		}
-	}
-
-	void executeCommand(const char* cmd_line);
-
-	std::string getPrompt() const {
-		return m_prompt;
-	}
-
-	void setPrompt(const std::string& newPrompt) {
-		m_prompt = newPrompt;
-	}
-
-	// Getter for lastPwd
-	char* getLastPwd() const {
-		return lastPwd;
-	}
-
-	// Setter for lastPwd
-	void setLastPwd(const char* newPwd) {
-		if (lastPwd) {
-			free(lastPwd); // Free old memory
-		}
-		lastPwd = strdup(newPwd); // Duplicate new path
-	}
-
-	JobsList& getJobsList() {
-		return jobsList;
-	}
-};
-
 class BuiltInCommand : public Command {
 public:
 	BuiltInCommand(const char* cmd_line);
