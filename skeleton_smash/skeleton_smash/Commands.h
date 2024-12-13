@@ -56,7 +56,7 @@ public:
 	virtual ~GetCurrDirCommand() {
 	}
 
-	void execute() override {}
+	void execute() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {
