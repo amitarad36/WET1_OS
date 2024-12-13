@@ -1,5 +1,7 @@
--what's the curr dir should be once you open the smash and should we initialize it somehow?
+- what's the curr dir should be once you open the smash and should we initialize it somehow?
 
--cntrl C, what should we do with that?
+- cntrl C, what should we do with that?
 
--signals and forks...
+- signals and forks...
+
+- wget https://github.com/Kitware/CMake/releases/latest/download/cmake-<latest-version>-linux-x86_64.sh
