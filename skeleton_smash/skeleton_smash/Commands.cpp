@@ -78,29 +78,6 @@ void _removeBackgroundSign(char* cmd_line) {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
-	string cmd_s = _trim(string(cmd_line));
-	string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-	if (firstWord.compare("chprompt") == 0) {
-		return new ChangePromptCommand(cmd_line);
-	}
-	else if (firstWord.compare("showpid") == 0) {
-		return new ShowPidCommand(cmd_line);
-	}
-	else if (firstWord.compare("pwd") == 0) {
-		return new GetCurrDirCommand(cmd_line);
-	}
-	else if (firstWord.compare("cd") == 0) {
-		return new ChangeDirCommand(cmd_line);
-	}
-	else if (firstWord.compare("jobs") == 0) {
-		return new JobsCommand(cmd_line, &getInstance().getJobsList());
-	}
-	else {
-		return new ExternalCommand(cmd_line);
-	}
-	return nullptr;
-}
 
 void SmallShell::executeCommand(const char* cmd_line) { // in progress...
 	Command* cmd = CreateCommand(cmd_line);
@@ -178,4 +155,27 @@ void ChangeDirCommand::execute()  {
 
 	// Update lastPwd in SmallShell
 	shell.setLastPwd(currentDir);
+}
+Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
+	string cmd_s = _trim(string(cmd_line));
+	string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+	if (firstWord.compare("chprompt") == 0) {
+		return new ChangePromptCommand(cmd_line);
+	}
+	else if (firstWord.compare("showpid") == 0) {
+		return new ShowPidCommand(cmd_line);
+	}
+	else if (firstWord.compare("pwd") == 0) {
+		return new GetCurrDirCommand(cmd_line);
+	}
+	else if (firstWord.compare("cd") == 0) {
+		return new ChangeDirCommand(cmd_line);
+	}
+	else if (firstWord.compare("jobs") == 0) {
+		return new JobsCommand(cmd_line, &getInstance().getJobsList());
+	}
+	else {
+		return new ExternalCommand(cmd_line);
+	}
+	return nullptr;
 }
