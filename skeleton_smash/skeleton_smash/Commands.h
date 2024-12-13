@@ -239,6 +239,18 @@ private:
 public:
 	Command* CreateCommand(const char* cmd_line);
 
+	char* my_strdup(const char* str) {
+		if (!str) {
+			return nullptr;
+		}
+		char* dup = (char*)malloc(strlen(str) + 1); // Allocate memory
+		if (!dup) {
+			return nullptr; // Return nullptr if allocation fails
+		}
+		strcpy(dup, str); // Copy the string
+		return dup;
+	}
+
 	SmallShell(SmallShell const&) = delete; // Disable copy constructor
 
 	void operator=(SmallShell const&) = delete; // Disable assignment operator
@@ -276,7 +288,7 @@ public:
 		if (lastPwd) {
 			free(lastPwd); // Free old memory
 		}
-		lastPwd = strdup(newPwd); // Duplicate new path
+		lastPwd = my_strdup(newPwd);
 	}
 
 	JobsList& getJobsList() {
