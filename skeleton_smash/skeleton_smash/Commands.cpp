@@ -91,8 +91,11 @@ Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
 		return new GetCurrDirCommand(cmd_line);
 	}
 	else if (firstWord.compare("cd") == 0) {
-    return new ChangeDirCommand(cmd_line);
-}
+		return new ChangeDirCommand(cmd_line);
+	}
+	else if (firstWord.compare("jobs") == 0) {
+		return new JobsCommand(cmd_line, &getInstance().getJobsList());
+	}
 	else {
 		return new ExternalCommand(cmd_line);
 	}

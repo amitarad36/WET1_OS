@@ -6,10 +6,26 @@
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
+class Command {
+protected:
+	std::string m_cmd_line;
+public:
+	Command(const char* cmd_line);
+
+	virtual ~Command();
+
+	virtual void execute() = 0;
+
+	//virtual void prepare();
+	//virtual void cleanup();
+	// TODO: Add your extra methods if needed
+};
+
 class SmallShell {
 private:
 	std::string m_prompt;
 	char* lastPwd;
+	JobsList jobsList;
 
 	SmallShell() : m_prompt("smash"), lastPwd(nullptr) {}
 
@@ -55,21 +71,10 @@ public:
 		}
 		lastPwd = strdup(newPwd); // Duplicate new path
 	}
-};
 
-class Command {
-protected:
-	std::string m_cmd_line;
-public:
-	Command(const char* cmd_line);
-
-	virtual ~Command();
-
-	virtual void execute() = 0;
-
-	//virtual void prepare();
-	//virtual void cleanup();
-	// TODO: Add your extra methods if needed
+	JobsList& getJobsList() {
+		return jobsList;
+	}
 };
 
 class BuiltInCommand : public Command {
