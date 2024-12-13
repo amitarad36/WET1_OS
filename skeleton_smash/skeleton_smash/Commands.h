@@ -6,6 +6,57 @@
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
+class SmallShell {
+private:
+	std::string m_prompt;
+	char* lastPwd;
+
+	SmallShell() : m_prompt("smash"), lastPwd(nullptr) {}
+
+public:
+	Command* CreateCommand(const char* cmd_line);
+
+	SmallShell(SmallShell const&) = delete; // Disable copy constructor
+
+	void operator=(SmallShell const&) = delete; // Disable assignment operator
+
+	static SmallShell& getInstance() // Make SmallShell singleton
+	{
+		static SmallShell instance; // Guaranteed to be destroyed.
+		// Instantiated on first use.
+		return instance;
+	}
+
+	~SmallShell() {
+		if (lastPwd) {
+			free(lastPwd); // Free memory allocated for lastPwd
+		}
+	}
+
+	void executeCommand(const char* cmd_line);
+
+	std::string getPrompt() const {
+		return m_prompt;
+	}
+
+	void setPrompt(const std::string& newPrompt) {
+		m_prompt = newPrompt;
+	}
+
+	// Getter for lastPwd
+	char* getLastPwd() const {
+		return lastPwd;
+	}
+
+	// Setter for lastPwd
+	void setLastPwd(const char* newPwd) {
+		if (lastPwd) {
+			free(lastPwd); // Free old memory
+		}
+		lastPwd = strdup(newPwd); // Duplicate new path
+	}
+};
+
 class Command {
 protected:
 	std::string m_cmd_line;
@@ -60,11 +111,9 @@ public:
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-private:
-	char** plastPwd;
 public:
-	ChangeDirCommand(const char* cmd_line, char** plastPwd)
-		: BuiltInCommand(cmd_line), plastPwd(plastPwd) {}
+	ChangeDirCommand(const char* cmd_line)
+		: BuiltInCommand(cmd_line) {}
 
 	virtual ~ChangeDirCommand() {}
 
@@ -228,38 +277,6 @@ public:
 	}
 
 	void execute() override;
-};
-
-class SmallShell {
-private:
-	std::string m_prompt;
-	SmallShell() : m_prompt("smash") {}
-
-public:
-	Command* CreateCommand(const char* cmd_line);
-
-	SmallShell(SmallShell const&) = delete; // disable copy ctor
-	void operator=(SmallShell const&) = delete; // disable = operator
-	static SmallShell& getInstance() // make SmallShell singleton
-	{
-		static SmallShell instance; // Guaranteed to be destroyed.
-		// Instantiated on first use.
-		return instance;
-	}
-
-	~SmallShell();
-
-	void executeCommand(const char* cmd_line);
-
-	std::string getPrompt() const {
-		return m_prompt;
-	}
-
-	void setPrompt(const std::string& newPrompt) {
-		m_prompt = newPrompt;
-	}
-
-	// TODO: add extra methods as needed
 };
 
 #endif //SMASH_COMMAND_H_

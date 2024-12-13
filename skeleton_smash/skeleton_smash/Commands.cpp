@@ -75,14 +75,6 @@ void _removeBackgroundSign(char* cmd_line) {
 	cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-SmallShell::SmallShell() {
-	// TODO: add your implementation
-}
-
-SmallShell::~SmallShell() {
-	// TODO: add your implementation
-}
-
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
@@ -99,8 +91,8 @@ Command* SmallShell::CreateCommand(const char* cmd_line) { // in progress...
 		return new GetCurrDirCommand(cmd_line);
 	}
 	else if (firstWord.compare("cd") == 0) {
-		return new ChangeDirCommand(cmd_line); // Add this
-	}
+    return new ChangeDirCommand(cmd_line);
+}
 	else {
 		return new ExternalCommand(cmd_line);
 	}
@@ -158,13 +150,16 @@ void ChangeDirCommand::execute() override {
 		return;
 	}
 
+	// Get SmallShell instance
+	SmallShell& shell = SmallShell::getInstance();
+
 	if (path == "-") {
-		// Handle `cd -`
-		if (*plastPwd == nullptr) {
+		// Handle 'cd -'
+		if (!shell.getLastPwd()) {
 			std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
 			return;
 		}
-		path = std::string(*plastPwd); // Set path to the last working directory
+		path = std::string(shell.getLastPwd()); // Set path to the last working directory
 	}
 
 	char currentDir[COMMAND_MAX_LENGTH];
@@ -178,9 +173,6 @@ void ChangeDirCommand::execute() override {
 		return;
 	}
 
-	// Update `plastPwd` with the old working directory
-	if (*plastPwd != nullptr) {
-		free(*plastPwd); // Free previously allocated memory
-	}
-	*plastPwd = strdup(currentDir); // Save the current directory as the "old" directory
+	// Update lastPwd in SmallShell
+	shell.setLastPwd(currentDir);
 }
