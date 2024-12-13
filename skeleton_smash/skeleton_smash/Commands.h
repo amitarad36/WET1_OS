@@ -11,9 +11,13 @@ class Command {
 protected:
 	std::string m_cmd_line;
 public:
-	Command(const char* cmd_line);
+	Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
 
-	virtual ~Command();
+	std::string getCommandLine() {
+		return m_cmd_line;
+	}
+
+	virtual ~Command() {}
 
 	virtual void execute() = 0;
 
@@ -24,10 +28,9 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-	BuiltInCommand(const char* cmd_line);
+	BuiltInCommand(const char* cmd_line) : Command(cmd_line) {}
 
-	virtual ~BuiltInCommand() {
-	}
+	virtual ~BuiltInCommand() {}
 };
 
 class ExternalCommand : public Command {
@@ -42,10 +45,9 @@ public:
 
 class ChangePromptCommand : public BuiltInCommand {
 public:
-	ChangePromptCommand(const char* cmd_line);
+	ChangePromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
 
-	virtual ~ChangePromptCommand() {
-	}
+	virtual ~ChangePromptCommand() {}
 
 	void execute() override;
 };
@@ -84,17 +86,16 @@ public:
 
 class GetCurrDirCommand : public BuiltInCommand {
 public:
-	GetCurrDirCommand(const char* cmd_line);
+	GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
 
-	virtual ~GetCurrDirCommand() {
-	}
+	virtual ~GetCurrDirCommand() {}
 
 	void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
 public:
-	ShowPidCommand(const char* cmd_line);
+	ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
 
 	virtual ~ShowPidCommand() {
 	}
@@ -117,44 +118,107 @@ class QuitCommand : public BuiltInCommand {
 class JobsList {
 public:
 	class JobEntry {
-		// TODO: Add your data members
+	public:
+		int jobId;               // Unique job ID
+		pid_t pid;               // Process ID of the job
+		std::string command;     // The original command line
+		time_t startTime;        // Timestamp of when the job was added
+		bool isStopped;          // Whether the job is stopped
+
+		JobEntry(int id, pid_t pid, const std::string& cmd, bool stopped)
+			: jobId(id), pid(pid), command(cmd), startTime(time(nullptr)), isStopped(stopped) {}
 	};
 
-	// TODO: Add your data members
+private:
+	std::vector<JobEntry> jobs; // Vector of active jobs
+	int nextJobId;              // Tracks the next available job ID
+
 public:
-	JobsList();
+	JobsList() : nextJobId(1) {}
 
-	~JobsList();
+	~JobsList() {}
 
-	void addJob(Command* cmd, bool isStopped = false);
+	void addJob(Command* cmd, pid_t pid, bool isStopped = false) {
+		removeFinishedJobs(); // Clean up finished jobs before adding
+		jobs.emplace_back(nextJobId++, pid, cmd->getCommandLine(), isStopped);
+	}
 
-	void printJobsList();
+	void printJobsList() {
+		removeFinishedJobs(); // Clean up finished jobs before printing
+		std::sort(jobs.begin(), jobs.end(), [](const JobEntry& a, const JobEntry& b) {
+			return a.jobId < b.jobId; // Sort by jobId
+			});
 
-	void killAllJobs();
+		for (const auto& job : jobs) {
+			std::cout << "[" << job.jobId << "] " << job.command;
+			if (job.isStopped) {
+				std::cout << " (stopped)";
+			}
+			std::cout << std::endl;
+		}
+	}
 
-	void removeFinishedJobs();
+	void removeFinishedJobs() {
+		for (auto it = jobs.begin(); it != jobs.end(); ) {
+			int status;
+			if (waitpid(it->pid, &status, WNOHANG) > 0) {
+				it = jobs.erase(it); // Remove finished jobs
+			}
+			else {
+				++it;
+			}
+		}
+	}
 
-	JobEntry* getJobById(int jobId);
+	JobEntry* getJobById(int jobId) {
+		for (auto& job : jobs) {
+			if (job.jobId == jobId) {
+				return &job;
+			}
+		}
+		return nullptr;
+	}
 
-	void removeJobById(int jobId);
+	void removeJobById(int jobId) {
+		jobs.erase(std::remove_if(jobs.begin(), jobs.end(), [jobId](const JobEntry& job) {
+			return job.jobId == jobId;
+			}), jobs.end());
+	}
 
-	JobEntry* getLastJob(int* lastJobId);
+	JobEntry* getLastJob(int* lastJobId) {
+		if (jobs.empty()) {
+			return nullptr;
+		}
+		*lastJobId = jobs.back().jobId;
+		return &jobs.back();
+	}
 
-	JobEntry* getLastStoppedJob(int* jobId);
-
-	// TODO: Add extra methods or modify exisitng ones as needed
+	JobEntry* getLastStoppedJob(int* jobId) {
+		for (auto it = jobs.rbegin(); it != jobs.rend(); ++it) {
+			if (it->isStopped) {
+				*jobId = it->jobId;
+				return &(*it);
+			}
+		}
+		return nullptr;
+	}
 };
 
 class JobsCommand : public BuiltInCommand {
-	// TODO: Add your data members
+private:
+	JobsList* jobs;
+
 public:
-	JobsCommand(const char* cmd_line, JobsList* jobs);
+	JobsCommand(const char* cmd_line, JobsList* jobs)
+		: BuiltInCommand(cmd_line), jobs(jobs) {}
 
-	virtual ~JobsCommand() {
+	virtual ~JobsCommand() {}
+
+	void execute() override {
+		jobs->printJobsList(); // Simply call the printJobsList method
 	}
-
-	void execute() override;
 };
+
 
 class KillCommand : public BuiltInCommand {
 	// TODO: Add your data members
