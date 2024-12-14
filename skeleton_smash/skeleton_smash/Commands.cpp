@@ -142,6 +142,7 @@ BuiltInCommand::~BuiltInCommand() {}
 
 ExternalCommand::ExternalCommand(const char* cmd_line)
 	: Command(cmd_line), m_isBackground(false) {
+	cout << "external constructor" << endl;
 	m_cmdLine = std::string(cmd_line);
 
 	// Trim whitespace and detect background execution
