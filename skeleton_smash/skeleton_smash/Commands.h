@@ -231,6 +231,7 @@ private:
 	std::string m_prompt;
 	char* lastPwd;
 	JobsList jobsList;
+	int m_pid;
 
 	SmallShell();
 
@@ -258,6 +259,8 @@ public:
 	void setLastPwd(const char* newPwd);
 		
 	JobsList& getJobsList();
+
+	int getShellPid();
 };
 
 #endif //SMASH_COMMAND_H_

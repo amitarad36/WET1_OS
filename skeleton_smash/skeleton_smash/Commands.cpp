@@ -88,16 +88,6 @@ void _removeBackgroundSign(char* cmd_line) {
 	cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-//cpoied!!!!!!!!!
-void _removeBackgroundSignTemp(std::string& cmd_line)
-{
-	cmd_line = _trim(cmd_line);
-	if (cmd_line[cmd_line.length() - 1] == '&')
-	{
-		cmd_line = cmd_line.substr(0, cmd_line.length() - 1);
-	}
-}
-
 // ================= Command Base Class =================
 
 Command::Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
@@ -235,7 +225,7 @@ ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) 
 ShowPidCommand::~ShowPidCommand() {}
 
 void ShowPidCommand::execute() {
-	cout << "smash pid is " << getpid() << endl;
+	cout << "smash pid is " << SmallShell::getInstance().getSmashPid() << endl;
 }
 
 // ================= QuitCommand Class =================
@@ -359,7 +349,7 @@ void unaliasCommand::execute() {}
 
 // ================= SmallShell Singleton =================
 
-SmallShell::SmallShell() : m_prompt("smash"), lastPwd(nullptr) {}
+SmallShell::SmallShell() : m_prompt("smash"), m_pid(getpid()), lastPwd(nullptr) {}
 
 SmallShell::~SmallShell() {
 	if (lastPwd) {
@@ -450,4 +440,8 @@ void SmallShell::setLastPwd(const char* newPwd) {
 
 JobsList& SmallShell::getJobsList() {
 	return jobsList;
+}
+
+int SmallShell::getShellPid() {
+	return m_pid;
 }
