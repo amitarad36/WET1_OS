@@ -401,11 +401,37 @@ void KillCommand::execute() {}
 
 // ================= ForegroundCommand Class =================
 
-ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line) {}
+ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs)
+	: BuiltInCommand(cmd_line), m_jobs(jobs) {}
 
 ForegroundCommand::~ForegroundCommand() {}
 
-void ForegroundCommand::execute() {}
+void ForegroundCommand::execute() {
+	JobsList::JobEntry* job = m_jobs->getLastJob();
+	if (job == nullptr) {
+		std::cout << "smash error: fg: jobs list is empty" << std::endl;
+		return;
+	}
+
+	int jobId = job->m_jobId;
+	int pid = job->m_pid; // Use int for pid
+
+	// Print job information
+	std::cout << job->m_command << " : " << pid << std::endl;
+
+	// Remove the job from the jobs list
+	m_jobs->removeJobById(jobId);
+
+	// Resume the job with SIGCONT
+	if (kill(pid, SIGCONT) == -1) {
+		perror("smash error: kill failed");
+	}
+
+	// Wait for the job to finish execution or stop
+	if (waitpid(pid, nullptr, WUNTRACED) == -1) {
+		perror("smash error: waitpid failed");
+	}
+}
 
 // ================= ListDirCommand Class =================
 
