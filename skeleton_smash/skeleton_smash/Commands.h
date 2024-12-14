@@ -3,12 +3,12 @@
 
 #include <vector>
 #include <cstring>
-#include <list> // not used
-#include <map> // not used
+#include <list>
+#include <map>
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
-#define MAX_SIZE 256 // not used
+#define MAX_SIZE 256
 
 class Command {
 protected:
@@ -229,9 +229,11 @@ public:
 class SmallShell {
 private:
 	std::string m_prompt;
-	char* lastPwd;
+	char* m_lastPwd;
 	JobsList jobsList;
 	int m_pid;
+	std::string m_currDir;
+
 
 	SmallShell();
 
@@ -261,6 +263,8 @@ public:
 	JobsList& getJobsList();
 
 	int getSmashPid();
+
+	std::string getSmashPwd();
 };
 
 #endif //SMASH_COMMAND_H_

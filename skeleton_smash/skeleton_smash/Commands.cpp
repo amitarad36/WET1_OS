@@ -209,13 +209,7 @@ GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_
 GetCurrDirCommand::~GetCurrDirCommand() {}
 
 void GetCurrDirCommand::execute() {
-	char cwd[COMMAND_MAX_LENGTH];
-	if (getcwd(cwd, sizeof(cwd)) != nullptr) {
-		cout << cwd << endl;
-	}
-	else {
-		perror("smash error: getcwd failed");
-	}
+	cout << SmallShell::getInstance().getSmashPwd() << endl;
 }
 
 // ================= ShowPidCommand Class =================
@@ -349,11 +343,11 @@ void unaliasCommand::execute() {}
 
 // ================= SmallShell Singleton =================
 
-SmallShell::SmallShell() : m_prompt("smash"), m_pid(getpid()), lastPwd(nullptr) {}
+SmallShell::SmallShell() : m_prompt("smash"), m_pid(getpid()), m_currDir(getSmashPwd()), m_lastPwd(nullptr) {}
 
 SmallShell::~SmallShell() {
-	if (lastPwd) {
-		free(lastPwd); // Free memory allocated for lastPwd
+	if (m_lastPwd) {
+		free(m_lastPwd); // Free memory allocated for lastPwd
 	}
 }
 
@@ -428,14 +422,14 @@ void SmallShell::setPrompt(const std::string& newPrompt) {
 }
 
 char* SmallShell::getLastPwd() const {
-	return lastPwd;
+	return m_lastPwd;
 }
 
 void SmallShell::setLastPwd(const char* newPwd) {
-	if (lastPwd) {
-		free(lastPwd); // Free old memory
+	if (m_lastPwd) {
+		free(m_lastPwd); // Free old memory
 	}
-	lastPwd = my_strdup(newPwd);
+	m_lastPwd = my_strdup(newPwd);
 }
 
 JobsList& SmallShell::getJobsList() {
@@ -444,4 +438,11 @@ JobsList& SmallShell::getJobsList() {
 
 int SmallShell::getSmashPid() {
 	return m_pid;
+}
+
+std::string SmallShell::getSmashPwd()
+{
+	char path[COMMAND_MAX_LENGTH];
+	getcwd(path, COMMAND_MAX_LENGTH);
+	return std::string(path);
 }
