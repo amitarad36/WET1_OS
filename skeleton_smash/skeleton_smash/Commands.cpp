@@ -142,7 +142,6 @@ BuiltInCommand::~BuiltInCommand() {}
 
 ExternalCommand::ExternalCommand(const char* cmd_line)
 	: Command(cmd_line), m_isBackground(false) {
-	cout << "external constructor" << endl;
 	m_cmdLine = std::string(cmd_line);
 
 	// Trim whitespace and detect background execution
@@ -162,45 +161,32 @@ bool ExternalCommand::isComplexCommand(const std::string& cmd_line) {
 
 void ExternalCommand::execute() {
 	if (m_isBackground) {
-		// For background commands, add the job using JobsList
-		SmallShell::getInstance().getJobsList().addJob(this, false);
+		pid_t pid = fork();
+		if (pid == 0) {  // Child process
+			// Execute the command in the background
+			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
+			perror("Exec failed");
+			exit(1); // Exit if exec fails
+		}
+		else {  // Parent process
+			// Add the job to the JobsList
+			JobEntry job(pid, m_cmdLine);
+			SmallShell::getInstance().getJobsList().addJob(job); // Ensure job is added
+			std::cout << "Background job started with PID: " << pid << std::endl;
+		}
 	}
 	else {
-		// Handle foreground commands directly
+		// Handle the foreground job (non-background)
 		pid_t pid = fork();
-
-		if (pid == -1) {
-			perror("smash error: fork failed");
-			return;
+		if (pid == 0) {
+			// Execute the command
+			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
+			perror("Exec failed");
+			exit(1); // Exit if exec fails
 		}
-
-		if (pid == 0) { // Child process
-			setpgrp(); // Create a new process group
-			if (isComplexCommand(m_cmdLine)) {
-				// Complex command: execute via /bin/bash
-				execl("/bin/bash", "bash", "-c", m_cmdLine.c_str(), nullptr);
-			}
-			else {
-				// Simple command: prepare arguments for execvp
-				char* args[21] = { nullptr };
-				char* cmdCopy = strdup(m_cmdLine.c_str());
-				char* token = strtok(cmdCopy, " ");
-				int i = 0;
-
-				while (token != nullptr && i < 20) {
-					args[i++] = token;
-					token = strtok(nullptr, " ");
-				}
-
-				execvp(args[0], args); // Execute the command
-				perror("smash error: execvp failed");
-				free(cmdCopy);
-				exit(1);
-			}
-		}
-		else { // Parent process
-			int status;
-			waitpid(pid, &status, WUNTRACED); // Wait for foreground command to finish
+		else {
+			// Wait for foreground job to finish
+			waitpid(pid, NULL, 0);
 		}
 	}
 }
@@ -211,15 +197,36 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line) : BuiltInCommand(
 
 ChangePromptCommand::~ChangePromptCommand() {}
 
-void ChangePromptCommand::execute() {
-	SmallShell& shell = SmallShell::getInstance();
-	char* token = strtok((char*)m_cmd_line, " ");
-	token = strtok(nullptr, " ");
-	if (token) {
-		shell.setPrompt(string(token));
+void ExternalCommand::execute() {
+	if (m_isBackground) {
+		pid_t pid = fork();
+		if (pid == 0) {  // Child process
+			setpgrp();  // Set a new process group for the child process
+
+			// Execute the command in the background
+			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
+			perror("Exec failed");
+			exit(1);  // Exit if exec fails
+		}
+		else {  // Parent process
+			// Add the background job to the job list
+			SmallShell::getInstance().getJobsList().addJob(pid, m_cmdLine, false);  // false means it's not stopped
+			std::cout << "Background job started with PID: " << pid << std::endl;
+		}
 	}
 	else {
-		shell.setPrompt("smash");
+		// Handle the foreground job (non-background)
+		pid_t pid = fork();
+		if (pid == 0) {
+			// Execute the command in the foreground
+			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
+			perror("Exec failed");
+			exit(1); // Exit if exec fails
+		}
+		else {
+			// Wait for the foreground job to finish
+			waitpid(pid, NULL, 0);
+		}
 	}
 }
 
