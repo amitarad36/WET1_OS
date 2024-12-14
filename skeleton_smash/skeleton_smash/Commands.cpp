@@ -386,11 +386,7 @@ void unaliasCommand::execute() {}
 
 SmallShell::SmallShell() : m_prompt("smash"), m_prevDir(""), m_pid(getpid()), m_currDir(getSmashPwd()){}
 
-SmallShell::~SmallShell() {
-	if (m_lastPwd) {
-		free(m_lastPwd); // Free memory allocated for lastPwd
-	}
-}
+SmallShell::~SmallShell() {}
 
 SmallShell& SmallShell::getInstance() {
 	static SmallShell instance; // Instantiated once on first use
