@@ -3,22 +3,29 @@
 
 #include <vector>
 #include <cstring>
+#include <list> // not used
+#include <map> // not used
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define MAX_SIZE 256 // not used
 
 class Command {
 protected:
-	std::string m_cmd_line;
+	std::vector <std::string> cmd_segments; //cpoied!!!!!!!!!
+	int processId; //cpoied!!!!!!!!!
+	bool backRound; //cpoied!!!!!!!!!
+	const char* m_cmd_line;
+	std::string aliasChar; //cpoied!!!!!!!!!
+	std::string fileDirectedForExternal; //cpoied!!!!!!!!!
+
 public:
-	Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
-
-	std::string getCommandLine() {
-		return m_cmd_line;
-	}
-
-	virtual ~Command() {}
-
+	Command(const char* cmd_line);
+	
+	virtual ~Command();
+	
+	std::string getCommandLine();
+	
 	virtual void execute() = 0;
 
 	//virtual void prepare();
@@ -28,26 +35,25 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-	BuiltInCommand(const char* cmd_line) : Command(cmd_line) {}
+	BuiltInCommand(const char* cmd_line);
 
-	virtual ~BuiltInCommand() {}
+	virtual ~BuiltInCommand();
 };
 
 class ExternalCommand : public Command {
 public:
 	ExternalCommand(const char* cmd_line);
 
-	virtual ~ExternalCommand() {
-	}
+	virtual ~ExternalCommand();
 
 	void execute() override;
 };
 
 class ChangePromptCommand : public BuiltInCommand {
 public:
-	ChangePromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+	ChangePromptCommand(const char* cmd_line);
 
-	virtual ~ChangePromptCommand() {}
+	virtual ~ChangePromptCommand();
 
 	void execute() override;
 };
@@ -57,8 +63,7 @@ class PipeCommand : public Command {
 public:
 	PipeCommand(const char* cmd_line);
 
-	virtual ~PipeCommand() {
-	}
+	virtual ~PipeCommand();
 
 	void execute() override;
 };
@@ -68,37 +73,34 @@ class RedirectionCommand : public Command {
 public:
 	explicit RedirectionCommand(const char* cmd_line);
 
-	virtual ~RedirectionCommand() {
-	}
+	virtual ~RedirectionCommand();
 
 	void execute() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {
 public:
-	ChangeDirCommand(const char* cmd_line)
-		: BuiltInCommand(cmd_line) {}
+	ChangeDirCommand(const char* cmd_line);
 
-	virtual ~ChangeDirCommand() {}
+	virtual ~ChangeDirCommand();
 
 	void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
 public:
-	GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+	GetCurrDirCommand(const char* cmd_line);
 
-	virtual ~GetCurrDirCommand() {}
+	virtual ~GetCurrDirCommand();
 
 	void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
 public:
-	ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+	ShowPidCommand(const char* cmd_line);
 
-	virtual ~ShowPidCommand() {
-	}
+	virtual ~ShowPidCommand();
 
 	void execute() override;
 };
@@ -109,8 +111,7 @@ class QuitCommand : public BuiltInCommand {
 	// TODO: Add your data members public:
 	QuitCommand(const char* cmd_line, JobsList* jobs);
 
-	virtual ~QuitCommand() {
-	}
+	virtual ~QuitCommand();
 
 	void execute() override;
 };
@@ -134,9 +135,9 @@ private:
 	int nextJobId;              // Tracks the next available job ID
 
 public:
-	JobsList() : nextJobId(1) {}
+	JobsList();
 
-	~JobsList() {}
+	~JobsList();
 
 	void addJob(Command* cmd, pid_t pid, bool isStopped = false) {
 		removeFinishedJobs(); // Clean up finished jobs before adding
@@ -209,24 +210,19 @@ private:
 	JobsList* jobs;
 
 public:
-	JobsCommand(const char* cmd_line, JobsList* jobs)
-		: BuiltInCommand(cmd_line), jobs(jobs) {}
+	JobsCommand(const char* cmd_line, JobsList* jobs);
 
-	virtual ~JobsCommand() {}
+	virtual ~JobsCommand();
 
-	void execute() override {
-		jobs->printJobsList(); // Simply call the printJobsList method
-	}
+	void execute() override;
 };
-
 
 class KillCommand : public BuiltInCommand {
 	// TODO: Add your data members
 public:
 	KillCommand(const char* cmd_line, JobsList* jobs);
 
-	virtual ~KillCommand() {
-	}
+	virtual ~KillCommand();
 
 	void execute() override;
 };
@@ -236,8 +232,7 @@ class ForegroundCommand : public BuiltInCommand {
 public:
 	ForegroundCommand(const char* cmd_line, JobsList* jobs);
 
-	virtual ~ForegroundCommand() {
-	}
+	virtual ~ForegroundCommand();
 
 	void execute() override;
 };
@@ -246,8 +241,7 @@ class ListDirCommand : public Command {
 public:
 	ListDirCommand(const char* cmd_line);
 
-	virtual ~ListDirCommand() {
-	}
+	virtual ~ListDirCommand();
 
 	void execute() override;
 };
@@ -256,8 +250,7 @@ class WhoAmICommand : public Command {
 public:
 	WhoAmICommand(const char* cmd_line);
 
-	virtual ~WhoAmICommand() {
-	}
+	virtual ~WhoAmICommand();
 
 	void execute() override;
 };
@@ -267,8 +260,7 @@ class NetInfo : public Command {
 public:
 	NetInfo(const char* cmd_line);
 
-	virtual ~NetInfo() {
-	}
+	virtual ~NetInfo();
 
 	void execute() override;
 };
@@ -277,8 +269,7 @@ class aliasCommand : public BuiltInCommand {
 public:
 	aliasCommand(const char* cmd_line);
 
-	virtual ~aliasCommand() {
-	}
+	virtual ~aliasCommand();
 
 	void execute() override;
 };
@@ -287,8 +278,7 @@ class unaliasCommand : public BuiltInCommand {
 public:
 	unaliasCommand(const char* cmd_line);
 
-	virtual ~unaliasCommand() {
-	}
+	virtual ~unaliasCommand();
 
 	void execute() override;
 };
@@ -299,66 +289,32 @@ private:
 	char* lastPwd;
 	JobsList jobsList;
 
-	SmallShell() : m_prompt("smash"), lastPwd(nullptr) {}
+	SmallShell();
 
 public:
+	~SmallShell();
+
+	char* my_strdup(const char* str);
+
+	SmallShell(SmallShell const&) = delete;
+
+	void operator=(SmallShell const&) = delete;
+
+	static SmallShell& getInstance();
+	
 	Command* CreateCommand(const char* cmd_line);
-
-	char* my_strdup(const char* str) {
-		if (!str) {
-			return nullptr;
-		}
-		char* dup = (char*)malloc(strlen(str) + 1); // Allocate memory
-		if (!dup) {
-			return nullptr; // Return nullptr if allocation fails
-		}
-		strcpy(dup, str); // Copy the string
-		return dup;
-	}
-
-	SmallShell(SmallShell const&) = delete; // Disable copy constructor
-
-	void operator=(SmallShell const&) = delete; // Disable assignment operator
-
-	static SmallShell& getInstance() // Make SmallShell singleton
-	{
-		static SmallShell instance; // Guaranteed to be destroyed.
-		// Instantiated on first use.
-		return instance;
-	}
-
-	~SmallShell() {
-		if (lastPwd) {
-			free(lastPwd); // Free memory allocated for lastPwd
-		}
-	}
 
 	void executeCommand(const char* cmd_line);
 
-	std::string getPrompt() const {
-		return m_prompt;
-	}
+	std::string getPrompt() const;
 
-	void setPrompt(const std::string& newPrompt) {
-		m_prompt = newPrompt;
-	}
+	void setPrompt(const std::string& newPrompt);
 
-	// Getter for lastPwd
-	char* getLastPwd() const {
-		return lastPwd;
-	}
+	char* getLastPwd() const;
 
-	// Setter for lastPwd
-	void setLastPwd(const char* newPwd) {
-		if (lastPwd) {
-			free(lastPwd); // Free old memory
-		}
-		lastPwd = my_strdup(newPwd);
-	}
+	void setLastPwd(const char* newPwd);
 		
-	JobsList& getJobsList() {
-		return jobsList;
-	}
+	JobsList& getJobsList();
 };
 
 #endif //SMASH_COMMAND_H_
