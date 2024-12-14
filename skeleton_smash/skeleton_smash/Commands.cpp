@@ -536,18 +536,29 @@ void WhoAmICommand::execute() {}
 
 // ================= aliasCommand Class =================
 
-aliasCommand::aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
-	if (cmd_line == nullptr || cmd_line[0] == '\0') {
-		listAliases();
-		return;
-	}
+aliasCommand::aliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases)
+	: BuiltInCommand(cmd_line), m_aliases(aliases) {
 
+	// Convert cmd_line (const char*) to std::string
+	std::string cmd_str(cmd_line);
+
+	// Define regex pattern to match alias command
 	std::regex aliasFormat("^alias ([a-zA-Z0-9_]+)='([^']*)'$");
-	std::cmatch matches;  // Use cmatch for const char*
+	std::smatch matches;
 
-	if (std::regex_match(cmd_line, matches, aliasFormat)) {
-		m_name = matches[1].str();  // alias name
+	// Check if the format of the alias command is valid
+	if (std::regex_match(cmd_str, matches, aliasFormat)) {
+		m_name = matches[1].str();     // alias name
 		m_command = matches[2].str();  // alias command
+
+		// Check if alias already exists
+		if (m_aliases.find(m_name) != m_aliases.end()) {
+			std::cerr << "smash error: alias: " << m_name << " already exists or is a reserved command" << std::endl;
+			return;
+		}
+
+		// Add the alias to the map
+		m_aliases[m_name] = m_command;
 	}
 	else {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
@@ -557,18 +568,14 @@ aliasCommand::aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
 aliasCommand::~aliasCommand() {}
 
 void aliasCommand::execute() {
-	// If the alias name is invalid or conflicts with a reserved keyword
-	if (!isValidAliasName(m_name)) {
-		std::cerr << "smash error: alias: " << m_name << " already exists or is a reserved command" << std::endl;
-		return;
-	}
-
-	// Create alias if the format is correct
-	if (!m_command.empty()) {
-		createAlias();
+	if (m_name.empty()) {
+		for (const auto& alias : m_aliases) {
+			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
+		}
 	}
 	else {
-		listAliases();
+		// If alias was added, execute it (no action needed here, already done in the constructor)
+		std::cout << m_name << "='" << m_command << "'" << std::endl;
 	}
 }
 
@@ -617,12 +624,13 @@ void NetInfo::execute() {}
 
 unaliasCommand::unaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases)
 	: BuiltInCommand(cmd_line), m_aliases(aliases) {
+
 	if (cmd_line == nullptr || cmd_line[0] == '\0') {
 		std::cerr << "smash error: unalias: not enough arguments" << std::endl;
 		return;
 	}
 
-	// Parse the command line arguments after "unalias"
+	// Parse the command line arguments after 'unalias'
 	std::string cmdStr(cmd_line);
 	std::stringstream ss(cmdStr);
 	std::string alias;
@@ -633,15 +641,12 @@ unaliasCommand::unaliasCommand(const char* cmd_line, std::map<std::string, std::
 	}
 
 	// Skip the first "unalias" part
-	if (!m_names.empty()) {
-		m_names.erase(m_names.begin());
-	}
+	m_names.erase(m_names.begin());
 
 	if (m_names.empty()) {
 		std::cerr << "smash error: unalias: not enough arguments" << std::endl;
 	}
 	else {
-		// Call removeAliases if valid names are present
 		removeAliases(m_names);
 	}
 }
@@ -654,7 +659,6 @@ void unaliasCommand::execute() {
 		return;
 	}
 
-	// Process alias removal
 	for (const auto& name : m_names) {
 		auto it = m_aliases.find(name);
 		if (it != m_aliases.end()) {
@@ -672,10 +676,9 @@ void unaliasCommand::removeAliases(const std::vector<std::string>& aliasNames) {
 		// Check if alias exists
 		if (m_aliases.find(name) == m_aliases.end()) {
 			std::cerr << "smash error: unalias: " << name << " alias does not exist" << std::endl;
-			return;  // Stop at the first non-existing alias
+			return;
 		}
 
-		// Remove the alias from the map
 		m_aliases.erase(name);
 	}
 }
@@ -722,14 +725,14 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
 	else if (firstWord == "netinfo") {
 		return new NetInfo(cmd_line);
 	}
-	else if (firstWord.compare("alias") == 0) {
-		return new aliasCommand(cmd_line);
+	else if (firstWord == "alias") {
+		return new aliasCommand(cmd_line, m_aliases);  // Pass m_aliases for alias handling
 	}
-	else if (firstWord.compare("unalias") == 0) {
-		return new unaliasCommand(cmd_line);
+	else if (firstWord == "unalias") {
+		return new unaliasCommand(cmd_line, m_aliases);  // Pass m_aliases for alias removal
 	}
 	else {
-		return new ExternalCommand(cmd_line); // Default to external command
+		return new ExternalCommand(cmd_line); // Default to external command if no match
 	}
 }
 

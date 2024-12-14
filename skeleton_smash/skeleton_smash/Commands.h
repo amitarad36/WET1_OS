@@ -235,7 +235,7 @@ private:
 	std::string m_command;
 
 public:
-	aliasCommand(const char* cmd_line);
+	aliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases);
 
 	virtual ~aliasCommand();
 
@@ -252,14 +252,15 @@ class unaliasCommand : public BuiltInCommand {
 private:
 	std::map<std::string, std::string>& m_aliases;
 	std::vector<std::string> m_names;
-	void removeAliases(const std::vector<std::string>& aliasNames);
 
 public:
 	unaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases);
-
-	virtual ~unaliasCommand();
-
+	
+	~unaliasCommand();
+	
 	void execute() override;
+	
+	void removeAliases(const std::vector<std::string>& aliasNames);  // Remove specified aliases
 };
 
 class SmallShell {
@@ -269,7 +270,7 @@ private:
 	int m_pid;
 	std::string m_currDir;
 	std::string m_prevDir;
-
+	std::map<std::string, std::string> m_aliases;
 
 	SmallShell();
 
@@ -299,6 +300,12 @@ public:
 	std::string getSmashPwd();
 
 	void changePwd(std::string pwd);
+
+	void addAlias(const std::string& name, const std::string& command);
+
+	void removeAlias(const std::string& name);
+
+	void listAliases();
 };
 
 #endif //SMASH_COMMAND_H_
