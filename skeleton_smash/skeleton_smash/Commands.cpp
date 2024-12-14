@@ -285,7 +285,7 @@ JobsList::~JobsList() {
 	m_jobs.clear();
 }
 
-void JobsList::addJob(Command* cmd, bool isStopped = false) {
+void JobsList::addJob(Command* cmd, bool isStopped) {
 	int pid = fork();
 	if (pid == 0) {  // Child process
 		setpgrp();

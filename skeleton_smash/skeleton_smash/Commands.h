@@ -151,7 +151,6 @@ public:
 
 	JobEntry* getLastStoppedJob(int* jobId);
 
-	// TODO: Add extra methods or modify exisitng ones as needed
 };
 
 class JobsCommand : public BuiltInCommand {
