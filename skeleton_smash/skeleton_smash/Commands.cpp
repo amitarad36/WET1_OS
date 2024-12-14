@@ -246,6 +246,51 @@ QuitCommand::~QuitCommand() {}
 
 void QuitCommand::execute() {}
 
+// ================= JobsList Class =================
+
+JobsList::JobsList() {
+	// Constructor implementation (empty)
+}
+
+JobsList::~JobsList() {
+	// Destructor implementation (empty)
+}
+
+void JobsList::addJob(Command* cmd, bool isStopped) {
+	// Method implementation (empty)
+}
+
+void JobsList::printJobsList() {
+	// Method implementation (empty)
+}
+
+void JobsList::killAllJobs() {
+	// Method implementation (empty)
+}
+
+void JobsList::removeFinishedJobs() {
+	// Method implementation (empty)
+}
+
+JobsList::JobEntry* JobsList::getJobById(int jobId) {
+	// Method implementation (empty)
+	return nullptr;
+}
+
+void JobsList::removeJobById(int jobId) {
+	// Method implementation (empty)
+}
+
+JobsList::JobEntry* JobsList::getLastJob(int* lastJobId) {
+	// Method implementation (empty)
+	return nullptr;
+}
+
+JobsList::JobEntry* JobsList::getLastStoppedJob(int* jobId) {
+	// Method implementation (empty)
+	return nullptr;
+}
+
 // ================= JobsCommand Class =================
 
 JobsCommand::JobsCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs) {}

@@ -119,90 +119,32 @@ class QuitCommand : public BuiltInCommand {
 class JobsList {
 public:
 	class JobEntry {
-	public:
-		int jobId;               // Unique job ID
-		pid_t pid;               // Process ID of the job
-		std::string command;     // The original command line
-		time_t startTime;        // Timestamp of when the job was added
-		bool isStopped;          // Whether the job is stopped
-
-		JobEntry(int id, pid_t pid, const std::string& cmd, bool stopped)
-			: jobId(id), pid(pid), command(cmd), startTime(time(nullptr)), isStopped(stopped) {}
+		// TODO: Add your data members
 	};
 
-private:
-	std::vector<JobEntry> jobs; // Vector of active jobs
-	int nextJobId;              // Tracks the next available job ID
-
+	// TODO: Add your data members
 public:
 	JobsList();
 
 	~JobsList();
 
-	void addJob(Command* cmd, pid_t pid, bool isStopped = false) {
-		removeFinishedJobs(); // Clean up finished jobs before adding
-		jobs.emplace_back(nextJobId++, pid, cmd->getCommandLine(), isStopped);
-	}
+	void addJob(Command* cmd, bool isStopped = false);
 
-	void printJobsList() {
-		removeFinishedJobs(); // Clean up finished jobs before printing
-		std::sort(jobs.begin(), jobs.end(), [](const JobEntry& a, const JobEntry& b) {
-			return a.jobId < b.jobId; // Sort by jobId
-			});
+	void printJobsList();
 
-		for (const auto& job : jobs) {
-			std::cout << "[" << job.jobId << "] " << job.command;
-			if (job.isStopped) {
-				std::cout << " (stopped)";
-			}
-			std::cout << std::endl;
-		}
-	}
+	void killAllJobs();
 
-	void removeFinishedJobs() {
-		for (auto it = jobs.begin(); it != jobs.end(); ) {
-			int status;
-			if (waitpid(it->pid, &status, WNOHANG) > 0) {
-				it = jobs.erase(it); // Remove finished jobs
-			}
-			else {
-				++it;
-			}
-		}
-	}
+	void removeFinishedJobs();
 
-	JobEntry* getJobById(int jobId) {
-		for (auto& job : jobs) {
-			if (job.jobId == jobId) {
-				return &job;
-			}
-		}
-		return nullptr;
-	}
+	JobEntry* getJobById(int jobId);
 
-	void removeJobById(int jobId) {
-		jobs.erase(std::remove_if(jobs.begin(), jobs.end(), [jobId](const JobEntry& job) {
-			return job.jobId == jobId;
-			}), jobs.end());
-	}
+	void removeJobById(int jobId);
 
-	JobEntry* getLastJob(int* lastJobId) {
-		if (jobs.empty()) {
-			return nullptr;
-		}
-		*lastJobId = jobs.back().jobId;
-		return &jobs.back();
-	}
+	JobEntry* getLastJob(int* lastJobId);
 
-	JobEntry* getLastStoppedJob(int* jobId) {
-		for (auto it = jobs.rbegin(); it != jobs.rend(); ++it) {
-			if (it->isStopped) {
-				*jobId = it->jobId;
-				return &(*it);
-			}
-		}
-		return nullptr;
-	}
+	JobEntry* getLastStoppedJob(int* jobId);
+
+	// TODO: Add extra methods or modify exisitng ones as needed
 };
 
 class JobsCommand : public BuiltInCommand {
