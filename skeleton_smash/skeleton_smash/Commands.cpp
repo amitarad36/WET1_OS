@@ -203,17 +203,22 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_li
 ChangeDirCommand::~ChangeDirCommand() {}
 
 void ChangeDirCommand::execute() {
+	// Remove any background sign if present at the end of the command
 	if (!m_command_seg.empty() && m_command_seg.back() == "&") {
 		m_command_seg.pop_back();
 	}
 
+	// If no argument is provided, do nothing
 	if (m_command_seg.size() == 1) {
-		SmallShell::getInstance().changePwd(SmallShell::getInstance().getSmashPwd());
+		return;
 	}
-	else if (m_command_seg.size() == 2) {
-		std::string path = m_command_seg[1];
-		delBackSign(path);
 
+	// If exactly one argument is provided (the path)
+	if (m_command_seg.size() == 2) {
+		std::string path = m_command_seg[1];
+		delBackSign(path);  // Clean up background sign if any
+
+		// Handle the special case for 'cd -'
 		if (path == "-") {
 			const std::string& prevPwd = SmallShell::getInstance().getPrevPwd();
 			if (prevPwd.empty()) {
@@ -228,6 +233,7 @@ void ChangeDirCommand::execute() {
 				}
 			}
 		}
+		// Change to the specified directory (relative or absolute path)
 		else {
 			if (chdir(path.c_str()) != -1) {
 				SmallShell::getInstance().changePwd(path);
@@ -237,8 +243,8 @@ void ChangeDirCommand::execute() {
 			}
 		}
 	}
+	// If there are too many arguments, print the error message
 	else {
-		// Too many arguments
 		std::cerr << "smash error: cd: too many arguments" << std::endl;
 	}
 }
@@ -438,7 +444,6 @@ void SmallShell::executeCommand(const char* cmd_line) {
 }
 
 std::string SmallShell::getPrompt() const {
-
 	return m_prompt + ">";
 }
 
