@@ -88,9 +88,40 @@ void _removeBackgroundSign(char* cmd_line) {
 	cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+void delBackSign(std::string& cmd_line) {
+	cmd_line = _trim(cmd_line);
+	if (!cmd_line.empty() && cmd_line.back() == '&') {
+		cmd_line.pop_back();
+	}
+}
+
+void vecFromLine(const char* cmd_line, std::vector<std::string>& line) {
+	std::string temp = cmd_line;
+	std::string add;
+	bool inWord = false;
+
+	for (char ch : temp) {
+		if (ch != ' ') {
+			add += ch;
+			inWord = true;
+		}
+		else if (inWord) {
+			line.push_back(add);
+			add.clear();
+			inWord = false;
+		}
+	}
+
+	if (inWord) {
+		line.push_back(add);
+	}
+}
+
 // ================= Command Base Class =================
 
-Command::Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
+Command::Command(const char* cmd_line) : m_cmd_line(cmd_line), m_command_seg() {
+	vecFromLine(cmd_line, m_command_seg);
+}
 
 Command::~Command() {}
 
@@ -172,33 +203,43 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_li
 ChangeDirCommand::~ChangeDirCommand() {}
 
 void ChangeDirCommand::execute() {
-	SmallShell& shell = SmallShell::getInstance();
-	char* token = strtok((char*)m_cmd_line, " ");
-	token = strtok(nullptr, " "); // skip the "cd" command
-
-	if (!token) {
-		cerr << "smash error: cd: missing arguments" << endl;
-		return;
+	if (!m_command_seg.empty() && m_command_seg.back() == "&") {
+		m_command_seg.pop_back();
 	}
 
-	if (strcmp(token, "-") == 0) {
-		if (shell.getLastPwd()) {
-			chdir(shell.getLastPwd());
-			shell.setLastPwd(getcwd(nullptr, 0));
+	if (m_command_seg.size() == 1) {
+		SmallShell::getInstance().changePwd(SmallShell::getInstance().getSmashPwd());
+	}
+	else if (m_command_seg.size() == 2) {
+		std::string path = m_command_seg[1];
+		delBackSign(path);
+
+		if (path == "-") {
+			const std::string& prevPwd = SmallShell::getInstance().getPrevPwd();
+			if (prevPwd.empty()) {
+				std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+			}
+			else {
+				if (chdir(prevPwd.c_str()) != -1) {
+					SmallShell::getInstance().changePwd(prevPwd);
+				}
+				else {
+					perror("smash error: chdir failed");
+				}
+			}
 		}
 		else {
-			cerr << "smash error: cd: OLDPWD not set" << endl;
+			if (chdir(path.c_str()) != -1) {
+				SmallShell::getInstance().changePwd(path);
+			}
+			else {
+				perror("smash error: chdir failed");
+			}
 		}
 	}
 	else {
-		char* currPwd = getcwd(nullptr, 0);
-		if (chdir(token) == -1) {
-			perror("smash error: chdir failed");
-		}
-		else {
-			shell.setLastPwd(currPwd);
-		}
-		free(currPwd);
+		// Too many arguments
+		std::cerr << "smash error: cd: too many arguments" << std::endl;
 	}
 }
 
@@ -343,7 +384,7 @@ void unaliasCommand::execute() {}
 
 // ================= SmallShell Singleton =================
 
-SmallShell::SmallShell() : m_prompt("smash"), m_pid(getpid()), m_currDir(getSmashPwd()), m_lastPwd(nullptr) {}
+SmallShell::SmallShell() : m_prompt("smash"), m_prevDir(""), m_pid(getpid()), m_currDir(getSmashPwd()), m_lastPwd(nullptr) {}
 
 SmallShell::~SmallShell() {
 	if (m_lastPwd) {
@@ -354,18 +395,6 @@ SmallShell::~SmallShell() {
 SmallShell& SmallShell::getInstance() {
 	static SmallShell instance; // Instantiated once on first use
 	return instance;
-}
-
-char* SmallShell::my_strdup(const char* str) {
-	if (!str) {
-		return nullptr;
-	}
-	char* dup = (char*)malloc(strlen(str) + 1); // Allocate memory
-	if (!dup) {
-		return nullptr; // Return nullptr if allocation fails
-	}
-	strcpy(dup, str); // Copy the string
-	return dup;
 }
 
 Command* SmallShell::CreateCommand(const char* cmd_line) {
@@ -421,15 +450,8 @@ void SmallShell::setPrompt(const std::string& newPrompt) {
 	m_prompt = newPrompt;
 }
 
-char* SmallShell::getLastPwd() const {
-	return m_lastPwd;
-}
-
-void SmallShell::setLastPwd(const char* newPwd) {
-	if (m_lastPwd) {
-		free(m_lastPwd); // Free old memory
-	}
-	m_lastPwd = my_strdup(newPwd);
+std::string SmallShell::getPrevPwd() const {
+	return m_prevDir;
 }
 
 JobsList& SmallShell::getJobsList() {
@@ -445,4 +467,10 @@ std::string SmallShell::getSmashPwd()
 	char path[COMMAND_MAX_LENGTH];
 	getcwd(path, COMMAND_MAX_LENGTH);
 	return std::string(path);
+}
+
+void SmallShell::changePwd(std::string pwd) {
+	std::string curr = m_currDir;
+	m_currDir = pwd;
+	m_prevDir = curr;
 }

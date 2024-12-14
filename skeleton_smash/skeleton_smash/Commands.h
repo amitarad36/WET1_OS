@@ -8,16 +8,11 @@
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
-#define MAX_SIZE 256
 
 class Command {
 protected:
-	std::vector <std::string> cmd_segments; //cpoied!!!!!!!!!
-	int processId; //cpoied!!!!!!!!!
-	bool backRound; //cpoied!!!!!!!!!
+	std::vector <std::string> m_command_seg;
 	const char* m_cmd_line;
-	std::string aliasChar; //cpoied!!!!!!!!!
-	std::string fileDirectedForExternal; //cpoied!!!!!!!!!
 
 public:
 	Command(const char* cmd_line);
@@ -229,18 +224,16 @@ public:
 class SmallShell {
 private:
 	std::string m_prompt;
-	char* m_lastPwd;
 	JobsList jobsList;
 	int m_pid;
 	std::string m_currDir;
+	std::string m_prevDir;
 
 
 	SmallShell();
 
 public:
 	~SmallShell();
-
-	char* my_strdup(const char* str);
 
 	SmallShell(SmallShell const&) = delete;
 
@@ -256,15 +249,15 @@ public:
 
 	void setPrompt(const std::string& newPrompt);
 
-	char* getLastPwd() const;
-
-	void setLastPwd(const char* newPwd);
+	std::string getPrevPwd() const;
 		
 	JobsList& getJobsList();
 
 	int getSmashPid();
 
 	std::string getSmashPwd();
+
+	void changePwd(std::string pwd);
 };
 
 #endif //SMASH_COMMAND_H_
