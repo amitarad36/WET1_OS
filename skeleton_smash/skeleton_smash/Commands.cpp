@@ -140,24 +140,67 @@ BuiltInCommand::~BuiltInCommand() {}
 
 // ================= ExternalCommand Class =================
 
-ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
+ExternalCommand::ExternalCommand(const char* cmd_line)
+	: Command(cmd_line), m_isBackground(false) {
+	m_cmdLine = std::string(cmd_line);
+
+	// Trim whitespace and detect background execution
+	m_cmdLine.erase(m_cmdLine.find_last_not_of(" \t\n\r\f\v") + 1);
+	if (!m_cmdLine.empty() && m_cmdLine.back() == '&') {
+		m_cmdLine.pop_back(); // Remove '&'
+		m_cmdLine.erase(m_cmdLine.find_last_not_of(" \t\n\r\f\v") + 1);
+		m_isBackground = true;
+	}
+}
 
 ExternalCommand::~ExternalCommand() {}
 
+bool ExternalCommand::isComplexCommand(const std::string& cmd_line) {
+	return cmd_line.find('*') != std::string::npos || cmd_line.find('?') != std::string::npos;
+}
+
 void ExternalCommand::execute() {
-	pid_t pid = fork();
-	if (pid == 0) { // Child process
-		setpgrp();
-		const char* args[] = { "/bin/bash", "-c", m_cmd_line, nullptr };
-		execv("/bin/bash", (char* const*)args);
-		perror("smash error: execv failed");
-		exit(1);
-	}
-	else if (pid > 0) { // Parent process
-		waitpid(pid, nullptr, WUNTRACED);
+	if (m_isBackground) {
+		// For background commands, add the job using JobsList
+		SmallShell::getInstance().getJobsList().addJob(this, false);
 	}
 	else {
-		perror("smash error: fork failed");
+		// Handle foreground commands directly
+		pid_t pid = fork();
+
+		if (pid == -1) {
+			perror("smash error: fork failed");
+			return;
+		}
+
+		if (pid == 0) { // Child process
+			setpgrp(); // Create a new process group
+			if (isComplexCommand(m_cmdLine)) {
+				// Complex command: execute via /bin/bash
+				execl("/bin/bash", "bash", "-c", m_cmdLine.c_str(), nullptr);
+			}
+			else {
+				// Simple command: prepare arguments for execvp
+				char* args[21] = { nullptr };
+				char* cmdCopy = strdup(m_cmdLine.c_str());
+				char* token = strtok(cmdCopy, " ");
+				int i = 0;
+
+				while (token != nullptr && i < 20) {
+					args[i++] = token;
+					token = strtok(nullptr, " ");
+				}
+
+				execvp(args[0], args); // Execute the command
+				perror("smash error: execvp failed");
+				free(cmdCopy);
+				exit(1);
+			}
+		}
+		else { // Parent process
+			int status;
+			waitpid(pid, &status, WUNTRACED); // Wait for foreground command to finish
+		}
 	}
 }
 

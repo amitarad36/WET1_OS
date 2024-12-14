@@ -36,6 +36,11 @@ public:
 };
 
 class ExternalCommand : public Command {
+private:
+	std::string m_cmdLine;
+	bool m_isBackground;
+	bool isComplexCommand(const std::string& cmd_line);
+
 public:
 	ExternalCommand(const char* cmd_line);
 
