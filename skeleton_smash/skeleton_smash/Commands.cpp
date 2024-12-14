@@ -363,11 +363,10 @@ void JobsList::removeJobById(int jobId) {
 	m_jobs.erase(it, m_jobs.end());
 }
 
-JobsList::JobEntry* JobsList::getLastJob(int* lastJobId) {
+JobsList::JobEntry* JobsList::getLastJob() {
 	if (m_jobs.empty()) {
 		return nullptr;
 	}
-	*lastJobId = m_jobs.back().m_jobId;
 	return &m_jobs.back();
 }
 
