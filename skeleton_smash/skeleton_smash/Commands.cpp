@@ -663,6 +663,12 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
 	else if (firstWord == "netinfo") {
 		return new NetInfo(cmd_line);
 	}
+	else if (firstWord.compare("alias") == 0) {
+		return new aliasCommand(cmd_line);
+	}
+	else if (firstWord.compare("unalias") == 0) {
+		return new unaliasCommand(cmd_line);
+	}
 	else {
 		return new ExternalCommand(cmd_line); // Default to external command
 	}
