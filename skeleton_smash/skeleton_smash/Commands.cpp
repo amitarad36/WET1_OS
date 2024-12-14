@@ -615,11 +615,70 @@ void NetInfo::execute() {}
 
 // ================= unaliasCommand Class =================
 
-unaliasCommand::unaliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+unaliasCommand::unaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases)
+	: BuiltInCommand(cmd_line), m_aliases(aliases) {
+	if (cmd_line == nullptr || cmd_line[0] == '\0') {
+		std::cerr << "smash error: unalias: not enough arguments" << std::endl;
+		return;
+	}
+
+	// Parse the command line arguments after "unalias"
+	std::string cmdStr(cmd_line);
+	std::stringstream ss(cmdStr);
+	std::string alias;
+
+	// Extract alias names from the command line
+	while (ss >> alias) {
+		m_names.push_back(alias);
+	}
+
+	// Skip the first "unalias" part
+	if (!m_names.empty()) {
+		m_names.erase(m_names.begin());
+	}
+
+	if (m_names.empty()) {
+		std::cerr << "smash error: unalias: not enough arguments" << std::endl;
+	}
+	else {
+		// Call removeAliases if valid names are present
+		removeAliases(m_names);
+	}
+}
 
 unaliasCommand::~unaliasCommand() {}
 
-void unaliasCommand::execute() {}
+void unaliasCommand::execute() {
+	if (m_names.empty()) {
+		std::cerr << "smash error: unalias: not enough arguments" << std::endl;
+		return;
+	}
+
+	// Process alias removal
+	for (const auto& name : m_names) {
+		auto it = m_aliases.find(name);
+		if (it != m_aliases.end()) {
+			m_aliases.erase(it);  // Remove alias
+		}
+		else {
+			std::cerr << "smash error: unalias: " << name << " alias does not exist" << std::endl;
+			return;  // Stop at the first non-existing alias
+		}
+	}
+}
+
+void unaliasCommand::removeAliases(const std::vector<std::string>& aliasNames) {
+	for (const auto& name : aliasNames) {
+		// Check if alias exists
+		if (m_aliases.find(name) == m_aliases.end()) {
+			std::cerr << "smash error: unalias: " << name << " alias does not exist" << std::endl;
+			return;  // Stop at the first non-existing alias
+		}
+
+		// Remove the alias from the map
+		m_aliases.erase(name);
+	}
+}
 
 // ================= SmallShell Singleton =================
 

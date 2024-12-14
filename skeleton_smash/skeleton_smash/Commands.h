@@ -249,8 +249,13 @@ public:
 };
 
 class unaliasCommand : public BuiltInCommand {
+private:
+	std::map<std::string, std::string>& m_aliases;
+	std::vector<std::string> m_names;
+	void removeAliases(const std::vector<std::string>& aliasNames);
+
 public:
-	unaliasCommand(const char* cmd_line);
+	unaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliases);
 
 	virtual ~unaliasCommand();
 
