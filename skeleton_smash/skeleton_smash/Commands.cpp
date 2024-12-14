@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <chrono>
 #include <pwd.h>
+#include <set>
+
 
 using namespace std;
 
@@ -438,11 +440,48 @@ void JobsCommand::execute() {
 
 // ================= KillCommand Class =================
 
-KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line) {}
+KillCommand::KillCommand(const char* cmd_line, JobsList* jobsList)
+	: BuiltInCommand(cmd_line), m_jobsList(jobsList) {
+
+	char signumStr[10], jobIdStr[10];
+	int numArgs = sscanf(cmd_line, "kill -%s %s", signumStr, jobIdStr);
+
+	if (numArgs != 2) {
+		std::cerr << "smash error: kill: invalid arguments" << std::endl;
+		return;
+	}
+
+	// Convert the signum to an integer
+	m_signum = atoi(signumStr);
+
+	// Convert the job ID to an integer
+	m_jobId = atoi(jobIdStr);
+
+	if (m_signum <= 0 || m_jobId <= 0) {
+		std::cerr << "smash error: kill: invalid arguments" << std::endl;
+		return;
+	}
+}
 
 KillCommand::~KillCommand() {}
 
-void KillCommand::execute() {}
+void KillCommand::execute() {
+	JobsList::JobEntry* job = m_jobsList->getJobById(m_jobId);
+
+	if (!job) {
+		std::cerr << "smash error: kill: job-id " << m_jobId << " does not exist" << std::endl;
+		return;
+	}
+
+	// Try to send the signal
+	if (kill(job->m_pid, m_signum) == -1) {
+		perror("smash error: kill");
+		return;
+	}
+
+	// Print the success message
+	std::cout << "signal number " << m_signum << " was sent to pid " << job->m_pid << std::endl;
+}
 
 // ================= ForegroundCommand Class =================
 
@@ -496,11 +535,75 @@ void WhoAmICommand::execute() {}
 
 // ================= aliasCommand Class =================
 
-aliasCommand::aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+aliasCommand::aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
+	// Check if no arguments are provided, in which case we will list aliases
+	if (cmd_line == nullptr || cmd_line[0] == '\0') {
+		listAliases();
+		return;
+	}
+
+	std::regex aliasFormat("^alias ([a-zA-Z0-9_]+)='([^']*)'$");
+	std::smatch matches;
+
+	if (std::regex_match(cmd_line, matches, aliasFormat)) {
+		m_name = matches[1].str();  // alias name
+		m_command = matches[2].str();  // alias command
+	}
+	else {
+		std::cerr << "smash error: alias: invalid alias format" << std::endl;
+	}
+}
 
 aliasCommand::~aliasCommand() {}
 
-void aliasCommand::execute() {}
+void aliasCommand::execute() {
+	// If the alias name is invalid or conflicts with a reserved keyword
+	if (!isValidAliasName(m_name)) {
+		std::cerr << "smash error: alias: " << m_name << " already exists or is a reserved command" << std::endl;
+		return;
+	}
+
+	// Create alias if the format is correct
+	if (!m_command.empty()) {
+		createAlias();
+	}
+	else {
+		listAliases();
+	}
+}
+
+bool aliasCommand::isValidAliasName(const std::string& name) {
+	// Reserved commands (e.g., quit, lsdir, etc.) can be checked here
+	static const std::set<std::string> reservedCommands = {
+		"quit", "alias", "jobs", "fg", "kill", "lsdir"
+	};
+
+	// Check if the alias name exists in the reserved commands or if it is already in use
+	if (reservedCommands.find(name) != reservedCommands.end() || m_aliases.find(name) != m_aliases.end()) {
+		return false;
+	}
+	return true;
+}
+
+void aliasCommand::listAliases() const {
+	if (m_aliases.empty()) {
+		return;
+	}
+
+	for (const auto& alias : m_aliases) {
+		std::cout << alias.first << "='" << alias.second << "'" << std::endl;
+	}
+}
+
+void aliasCommand::createAlias() {
+	if (m_aliases.find(m_name) != m_aliases.end()) {
+		std::cerr << "smash error: alias: " << m_name << " already exists or is a reserved command" << std::endl;
+		return;
+	}
+
+	m_aliases[m_name] = m_command;
+	std::cout << "Alias " << m_name << " created successfully." << std::endl;
+}
 
 // ================= NetInfo Class =================
 

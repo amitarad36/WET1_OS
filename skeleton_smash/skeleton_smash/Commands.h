@@ -176,7 +176,11 @@ public:
 };
 
 class KillCommand : public BuiltInCommand {
-	// TODO: Add your data members
+private:
+	int m_signum;
+	int m_jobId;
+	JobsList* m_jobsList; 
+
 public:
 	KillCommand(const char* cmd_line, JobsList* jobs);
 
@@ -225,12 +229,23 @@ public:
 };
 
 class aliasCommand : public BuiltInCommand {
+private:
+	std::map<std::string, std::string> m_aliases;
+	std::string m_name;
+	std::string m_command;
+
 public:
 	aliasCommand(const char* cmd_line);
 
 	virtual ~aliasCommand();
 
 	void execute() override;
+
+	bool isValidAliasName(const std::string& name);
+
+	void listAliases() const;
+
+	void createAlias();
 };
 
 class unaliasCommand : public BuiltInCommand {
