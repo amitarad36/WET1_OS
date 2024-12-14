@@ -279,57 +279,116 @@ void QuitCommand::execute() {}
 
 // ================= JobsList Class =================
 
-JobsList::JobsList() {
-	// Constructor implementation (empty)
-}
+JobsList::JobsList() : m_lastJobId(0) {}
 
 JobsList::~JobsList() {
-	// Destructor implementation (empty)
+	m_jobs.clear();
 }
 
-void JobsList::addJob(Command* cmd, bool isStopped) {
-	// Method implementation (empty)
+void JobsList::addJob(Command* cmd, bool isStopped = false) {
+	int pid = fork();
+	if (pid == 0) {  // Child process
+		setpgrp();
+		const char* args[] = { "/bin/bash", "-c", cmd->getCommandLine().c_str(), nullptr };
+		execv("/bin/bash", (char* const*)args);
+		perror("smash error: execv failed");
+		exit(1);
+	}
+	else if (pid > 0) {  // Parent process
+		m_jobs.push_back(JobEntry(++m_lastJobId, cmd->getCommandLine(), pid, isStopped));
+	}
+	else {
+		perror("smash error: fork failed");
+	}
 }
 
 void JobsList::printJobsList() {
-	// Method implementation (empty)
+	removeFinishedJobs();  // Remove finished jobs before printing
+	if (m_jobs.empty()) {
+		std::cout << "No jobs found." << std::endl;
+		return;
+	}
+
+	// Sort jobs by jobId
+	std::sort(m_jobs.begin(), m_jobs.end(), [](const JobEntry& a, const JobEntry& b) {
+		return a.m_jobId < b.m_jobId;
+		});
+
+	// Print each job in the required format
+	for (const JobEntry& job : m_jobs) {
+		std::cout << "[" << job.m_jobId << "] " << job.m_command << (job.m_isStopped ? " (stopped)" : "") << std::endl;
+	}
 }
 
 void JobsList::killAllJobs() {
-	// Method implementation (empty)
+	for (const auto& job : m_jobs) {
+		kill(job.m_pid, SIGKILL);
+	}
+	m_jobs.clear();
 }
 
 void JobsList::removeFinishedJobs() {
-	// Method implementation (empty)
+	for (auto it = m_jobs.begin(); it != m_jobs.end();) {
+		int status;
+		int result = waitpid(it->m_pid, &status, WNOHANG);
+
+		if (result == -1) {
+			// Error occurred, continue with the next job
+			++it;
+		}
+		else if (result == 0) {
+			// Job is still running, keep it in the list
+			++it;
+		}
+		else {
+			// Job has finished, remove it from the list
+			it = m_jobs.erase(it);
+		}
+	}
 }
 
 JobsList::JobEntry* JobsList::getJobById(int jobId) {
-	// Method implementation (empty)
+	for (auto& job : m_jobs) {
+		if (job.m_jobId == jobId) {
+			return &job;
+		}
+	}
 	return nullptr;
 }
 
 void JobsList::removeJobById(int jobId) {
-	// Method implementation (empty)
+	auto it = std::remove_if(m_jobs.begin(), m_jobs.end(), [jobId](const JobEntry& job) {
+		return job.m_jobId == jobId;
+		});
+	m_jobs.erase(it, m_jobs.end());
 }
 
 JobsList::JobEntry* JobsList::getLastJob(int* lastJobId) {
-	// Method implementation (empty)
-	return nullptr;
+	if (m_jobs.empty()) {
+		return nullptr;
+	}
+	*lastJobId = m_jobs.back().m_jobId;
+	return &m_jobs.back();
 }
 
 JobsList::JobEntry* JobsList::getLastStoppedJob(int* jobId) {
-	// Method implementation (empty)
+	for (auto it = m_jobs.rbegin(); it != m_jobs.rend(); ++it) {
+		if (it->m_isStopped) {
+			*jobId = it->m_jobId;
+			return &(*it);
+		}
+	}
 	return nullptr;
 }
 
 // ================= JobsCommand Class =================
 
-JobsCommand::JobsCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs) {}
+JobsCommand::JobsCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), m_jobs(jobs) {}
 
 JobsCommand::~JobsCommand() {}
 
 void JobsCommand::execute() {
-	jobs->printJobsList();
+	m_jobs->printJobsList();
 }
 
 // ================= KillCommand Class =================

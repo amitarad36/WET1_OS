@@ -115,10 +115,21 @@ public:
 class JobsList {
 public:
 	class JobEntry {
-		// TODO: Add your data members
+	public:
+		int m_jobId;
+		std::string m_command;
+		int m_pid;
+		bool m_isStopped;
+
+		JobEntry(int jobId, const std::string& cmd, int pid, bool isStopped = false)
+			: m_jobId(jobId), m_command(cmd), m_pid(pid), m_isStopped(isStopped) {}
 	};
 
-	// TODO: Add your data members
+private:
+	std::vector<JobEntry> m_jobs;
+	int m_lastJobId;
+
+
 public:
 	JobsList();
 
@@ -145,7 +156,7 @@ public:
 
 class JobsCommand : public BuiltInCommand {
 private:
-	JobsList* jobs;
+	JobsList* m_jobs;
 
 public:
 	JobsCommand(const char* cmd_line, JobsList* jobs);
