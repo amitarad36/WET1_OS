@@ -287,18 +287,27 @@ JobsList::~JobsList() {
 
 void JobsList::addJob(Command* cmd, bool isStopped) {
 	int pid = fork();
-	if (pid == 0) {  // Child process
-		setpgrp();
-		const char* args[] = { "/bin/bash", "-c", cmd->getCommandLine().c_str(), nullptr };
-		execv("/bin/bash", (char* const*)args);
-		perror("smash error: execv failed");
-		exit(1);
-	}
-	else if (pid > 0) {  // Parent process
-		m_jobs.push_back(JobEntry(++m_lastJobId, cmd->getCommandLine(), pid, isStopped));
-	}
-	else {
+
+	if (pid == -1) {  // Fork failed
 		perror("smash error: fork failed");
+		return;  // Exit on error
+	}
+
+	if (pid == 0) {  // Child process
+		setpgrp();  // Set a new process group for the child process
+
+		// Prepare arguments for execv
+		const char* args[] = { "/bin/bash", "-c", cmd->getCommandLine().c_str(), nullptr };
+
+		// Execute the command in the child process
+		if (execv("/bin/bash", (char* const*)args) == -1) {
+			perror("smash error: execv failed");
+			exit(1);  // Ensure child exits if execv fails
+		}
+	}
+	else {  // Parent process
+		// Increment job ID and add the job to the list
+		m_jobs.push_back(JobEntry(++m_lastJobId, cmd->getCommandLine(), pid, isStopped));
 	}
 }
 
@@ -330,19 +339,16 @@ void JobsList::killAllJobs() {
 void JobsList::removeFinishedJobs() {
 	for (auto it = m_jobs.begin(); it != m_jobs.end();) {
 		int status;
-		int result = waitpid(it->m_pid, &status, WNOHANG);
+		int result = waitpid(it->m_pid, &status, WNOHANG);  // Non-blocking wait
 
 		if (result == -1) {
-			// Error occurred, continue with the next job
-			++it;
+			++it;  // Continue if error occurred
 		}
 		else if (result == 0) {
-			// Job is still running, keep it in the list
-			++it;
+			++it;  // Continue if job is still running
 		}
 		else {
-			// Job has finished, remove it from the list
-			it = m_jobs.erase(it);
+			it = m_jobs.erase(it);  // Remove job if finished
 		}
 	}
 }
@@ -373,11 +379,21 @@ JobsList::JobEntry* JobsList::getLastJob() {
 JobsList::JobEntry* JobsList::getLastStoppedJob(int* jobId) {
 	for (auto it = m_jobs.rbegin(); it != m_jobs.rend(); ++it) {
 		if (it->m_isStopped) {
-			*jobId = it->m_jobId;
-			return &(*it);
+			*jobId = it->m_jobId;  // Set the job ID of the last stopped job
+			return &(*it);  // Return last stopped job
 		}
 	}
 	return nullptr;
+}
+
+bool JobsList::isEmpty() const {
+	return m_jobs.empty();
+}
+
+void JobsList::printJobs() const {
+	for (const auto& job : m_jobs) {
+		std::cout << "[" << job.m_jobId << "] " << job.m_command << "&" << std::endl;
+	}
 }
 
 // ================= JobsCommand Class =================
