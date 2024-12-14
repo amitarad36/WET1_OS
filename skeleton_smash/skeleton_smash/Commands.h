@@ -260,7 +260,7 @@ public:
 		
 	JobsList& getJobsList();
 
-	int getShellPid();
+	int getSmashPid();
 };
 
 #endif //SMASH_COMMAND_H_
