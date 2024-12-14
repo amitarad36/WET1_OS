@@ -442,6 +442,6 @@ JobsList& SmallShell::getJobsList() {
 	return jobsList;
 }
 
-int SmallShell::getShellPid() {
+int SmallShell::getSmashPid() {
 	return m_pid;
 }
