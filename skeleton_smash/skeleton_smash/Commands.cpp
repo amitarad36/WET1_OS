@@ -429,7 +429,8 @@ void SmallShell::executeCommand(const char* cmd_line) {
 }
 
 std::string SmallShell::getPrompt() const {
-	return m_prompt;
+
+	return m_prompt + ">";
 }
 
 void SmallShell::setPrompt(const std::string& newPrompt) {
