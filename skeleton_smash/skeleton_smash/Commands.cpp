@@ -384,7 +384,7 @@ void unaliasCommand::execute() {}
 
 // ================= SmallShell Singleton =================
 
-SmallShell::SmallShell() : m_prompt("smash"), m_prevDir(""), m_pid(getpid()), m_currDir(getSmashPwd()), m_lastPwd(nullptr) {}
+SmallShell::SmallShell() : m_prompt("smash"), m_prevDir(""), m_pid(getpid()), m_currDir(getSmashPwd()), {}
 
 SmallShell::~SmallShell() {
 	if (m_lastPwd) {
