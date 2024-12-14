@@ -103,9 +103,12 @@ public:
 class JobsList;
 
 class QuitCommand : public BuiltInCommand {
-	// TODO: Add your data members public:
+private:
+	JobsList* m_jobsList;
+	bool m_kill;
+
 public:
-	QuitCommand(const char* cmd_line, JobsList* jobs);
+	QuitCommand(const char* cmd_line, JobsList* jobsList, bool kill = false);
 
 	virtual ~QuitCommand();
 
@@ -154,6 +157,9 @@ public:
 	bool isEmpty() const;
 
 	void printJobs() const;
+
+	std::vector<JobEntry>& getJobs();
+
 
 };
 

@@ -271,11 +271,37 @@ void ShowPidCommand::execute() {
 
 // ================= QuitCommand Class =================
 
-QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line) {}
+QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobsList, bool kill)
+	: BuiltInCommand(cmd_line), m_jobsList(jobsList), m_kill(kill) {}
 
 QuitCommand::~QuitCommand() {}
 
-void QuitCommand::execute() {}
+void QuitCommand::execute() {
+	if (m_kill) {
+		// Print the number of jobs to be killed
+		int killedJobsCount = 0;
+		for (auto& job : m_jobsList->getJobs()) {
+			if (!job.m_isStopped) {
+				std::cout << "smash: sending SIGKILL signal to " << m_jobsList->getJobs().size() << " jobs:" << std::endl;
+				break;  // Print only once before killing jobs
+			}
+		}
+
+		// Iterate over jobs and kill them
+		for (auto& job : m_jobsList->getJobs()) {
+			if (!job.m_isStopped) {
+				std::cout << job.m_pid << ": " << job.m_command << std::endl;
+				kill(job.m_pid, SIGKILL);  // Send SIGKILL to the job's PID
+				++killedJobsCount;
+			}
+		}
+
+		std::cout << killedJobsCount << " jobs were killed." << std::endl;
+	}
+
+	// Exit the shell (program)
+	exit(0);
+}
 
 // ================= JobsList Class =================
 
@@ -394,6 +420,10 @@ void JobsList::printJobs() const {
 	for (const auto& job : m_jobs) {
 		std::cout << "[" << job.m_jobId << "] " << job.m_command << "&" << std::endl;
 	}
+}
+
+std::vector<JobsList::JobEntry>& JobsList::getJobs() {
+	return m_jobs;
 }
 
 // ================= JobsCommand Class =================
