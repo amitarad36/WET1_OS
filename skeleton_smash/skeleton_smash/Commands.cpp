@@ -21,6 +21,7 @@
 #include <chrono>
 #include <pwd.h>
 #include <set>
+#include <string>
 
 
 using namespace std;
@@ -536,14 +537,13 @@ void WhoAmICommand::execute() {}
 // ================= aliasCommand Class =================
 
 aliasCommand::aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
-	// Check if no arguments are provided, in which case we will list aliases
 	if (cmd_line == nullptr || cmd_line[0] == '\0') {
 		listAliases();
 		return;
 	}
 
 	std::regex aliasFormat("^alias ([a-zA-Z0-9_]+)='([^']*)'$");
-	std::smatch matches;
+	std::cmatch matches;  // Use cmatch for const char*
 
 	if (std::regex_match(cmd_line, matches, aliasFormat)) {
 		m_name = matches[1].str();  // alias name
