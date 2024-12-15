@@ -66,12 +66,6 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prom
 
 ChangePromptCommand::~ChangePromptCommand() {}
 
-// ================= ChangePromptCommand Class ===============
-ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt)
-    : BuiltInCommand(cmd_line), m_prompt(prompt) {}
-
-ChangePromptCommand::~ChangePromptCommand() {}
-
 void ChangePromptCommand::execute() {
     // Debug: Starting the execution of ChangePromptCommand
     std::cout << "Debug: Entering ChangePromptCommand::execute()" << std::endl;
