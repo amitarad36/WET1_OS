@@ -66,21 +66,28 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prom
 
 ChangePromptCommand::~ChangePromptCommand() {}
 
+// ================= ChangePromptCommand Class ===============
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt)
+    : BuiltInCommand(cmd_line), m_prompt(prompt) {}
+
+ChangePromptCommand::~ChangePromptCommand() {}
+
 void ChangePromptCommand::execute() {
-    // Tokenize the command line
-    std::string cmd_str(m_cmd_line); // Convert command line to std::string
+    // Trim and parse the command line
+    std::string cmd_str = _trim(std::string(m_cmd_line));
     size_t first_space = cmd_str.find(' ');
 
-    if (first_space == std::string::npos || first_space + 1 >= cmd_str.size()) {
-        // No arguments provided, reset to "smash"
+    if (first_space == std::string::npos) {
+        // No argument provided, reset to "smash"
         m_prompt = "smash";
     }
     else {
         // Extract the argument after the first space
         std::string new_prompt = cmd_str.substr(first_space + 1);
+        new_prompt = _trim(new_prompt); // Remove any trailing or leading spaces
         size_t second_space = new_prompt.find(' ');
 
-        // Use only the first word (truncate after any additional spaces)
+        // Only take the first word
         if (second_space != std::string::npos) {
             new_prompt = new_prompt.substr(0, second_space);
         }
