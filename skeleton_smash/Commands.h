@@ -25,6 +25,16 @@ public:
     virtual ~BuiltInCommand();
 };
 
+class ChangePromptCommand : public BuiltInCommand {
+private:
+    std::string& m_prompt;
+
+public:
+    ChangePromptCommand(const char* cmd_line, std::string& prompt);
+    virtual ~ChangePromptCommand();
+    void execute() override;
+};
+
 class ExternalCommand : public Command {
 private:
     std::string m_cmdLine;
@@ -80,6 +90,10 @@ public:
     int getForegroundPid() const;
     std::string getForegroundCommand() const;
     JobsList& getJobsList();
+
+    // Definitions added for CreateCommand and executeCommand
+    Command* CreateCommand(const char* cmd_line);
+    void executeCommand(const char* cmd_line);
 };
 
 #endif // SMASH_COMMAND_H_
