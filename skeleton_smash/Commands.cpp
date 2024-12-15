@@ -191,8 +191,20 @@ void ExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == 0) { // Child process
         setpgrp();
-        execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
-        perror("Exec failed");
+
+        // Parse command line into arguments
+        char* args[COMMAND_MAX_ARGS];
+        int argCount = _parseCommandLine(m_cmdLine.c_str(), args);
+
+        // Debug: Print parsed arguments
+        std::cout << "Debug: Parsed command: \"" << args[0] << "\" with arguments: ";
+        for (int i = 0; i < argCount; i++) {
+            std::cout << "\"" << args[i] << "\" ";
+        }
+        std::cout << std::endl;
+
+        execvp(args[0], args); // Execute command
+        perror("Exec failed"); // If execvp returns, it's an error
         exit(1);
     }
     else if (pid > 0) { // Parent process
