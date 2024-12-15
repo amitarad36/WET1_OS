@@ -68,20 +68,27 @@ ChangePromptCommand::~ChangePromptCommand() {}
 
 void ChangePromptCommand::execute() {
     // Tokenize the command line
-    char* cmd_copy = strdup(m_cmd_line); // Duplicate command line to manipulate
-    char* token = strtok(cmd_copy, " "); // Skip the command name ("chprompt")
-    token = strtok(nullptr, " ");       // Get the first argument, if any
+    std::string cmd_str(m_cmd_line); // Convert command line to std::string
+    size_t first_space = cmd_str.find(' ');
 
-    if (token) {
-        m_prompt = std::string(token);  // Set the prompt to the provided argument
+    if (first_space == std::string::npos || first_space + 1 >= cmd_str.size()) {
+        // No arguments provided, reset to "smash"
+        m_prompt = "smash";
     }
     else {
-        m_prompt = "smash";             // Reset to default if no argument is given
+        // Extract the argument after the first space
+        std::string new_prompt = cmd_str.substr(first_space + 1);
+        size_t second_space = new_prompt.find(' ');
+
+        // Use only the first word (truncate after any additional spaces)
+        if (second_space != std::string::npos) {
+            new_prompt = new_prompt.substr(0, second_space);
+        }
+
+        // Update the prompt
+        m_prompt = new_prompt;
     }
-
-    free(cmd_copy); // Free the duplicated string
 }
-
 
 // ================== ShowPidCommand Class =================
 ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
