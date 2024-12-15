@@ -1,4 +1,3 @@
-
 #ifndef SMASH_COMMAND_H_
 #define SMASH_COMMAND_H_
 
@@ -7,7 +6,16 @@
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define WHITESPACE " \n\r\t\f\v"
 
+// Utility functions
+std::string _ltrim(const std::string& s);
+std::string _rtrim(const std::string& s);
+std::string _trim(const std::string& s);
+bool _isBackgroundCommand(const char* cmd_line);
+void _removeBackgroundSign(char* cmd_line);
+
+// Command class hierarchy
 class Command {
 protected:
     const char* m_cmd_line;
@@ -25,13 +33,17 @@ public:
     virtual ~BuiltInCommand();
 };
 
-class ChangePromptCommand : public BuiltInCommand {
-private:
-    std::string& m_prompt;
-
+class GetCurrDirCommand : public BuiltInCommand {
 public:
-    ChangePromptCommand(const char* cmd_line, std::string& prompt);
-    virtual ~ChangePromptCommand();
+    GetCurrDirCommand(const char* cmd_line);
+    virtual ~GetCurrDirCommand();
+    void execute() override;
+};
+
+class ShowPidCommand : public BuiltInCommand {
+public:
+    ShowPidCommand(const char* cmd_line);
+    virtual ~ShowPidCommand();
     void execute() override;
 };
 
@@ -91,7 +103,6 @@ public:
     std::string getForegroundCommand() const;
     JobsList& getJobsList();
 
-    // Definitions added for CreateCommand and executeCommand
     Command* CreateCommand(const char* cmd_line);
     void executeCommand(const char* cmd_line);
 };
