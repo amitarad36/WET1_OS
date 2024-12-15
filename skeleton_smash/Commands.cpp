@@ -283,7 +283,7 @@ void KillCommand::execute() {
 QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
 QuitCommand::~QuitCommand() {}
 void QuitCommand::execute() {
-	if (strstr(cmdLine, "kill")) {
+	if (strstr(cmdLine.c_str(), "kill")) {
 		jobsList->killAllJobs();
 	}
 	exit(0);
