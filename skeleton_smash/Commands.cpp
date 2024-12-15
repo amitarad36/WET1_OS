@@ -35,6 +35,23 @@ void _removeBackgroundSign(char* cmd_line) {
     cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+int _parseCommandLine(const char* cmd_line, char** args) {
+    int i = 0;
+    std::istringstream iss(_trim(std::string(cmd_line)));
+    for (std::string s; iss >> s;) {
+        args[i] = (char*)malloc(s.length() + 1);
+        if (args[i] == nullptr) {
+            perror("smash error: malloc failed");
+            exit(1);
+        }
+        strcpy(args[i], s.c_str());
+        i++;
+    }
+    args[i] = nullptr; // Null-terminate the argument list
+    return i;
+}
+
+
 // ======================= Command Class ====================
 Command::Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
 Command::~Command() {}
@@ -47,23 +64,8 @@ std::string Command::getCommandLine() const {
 BuiltInCommand::BuiltInCommand(const char* cmd_line) : Command(cmd_line) {}
 BuiltInCommand::~BuiltInCommand() {}
 
-// ================= GetCurrDirCommand Class ===============
-GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
-GetCurrDirCommand::~GetCurrDirCommand() {}
-
-void GetCurrDirCommand::execute() {
-    char cwd[COMMAND_MAX_LENGTH];
-    if (getcwd(cwd, sizeof(cwd)) == nullptr) {
-        perror("smash error: getcwd failed");
-    } else {
-        std::cout << cwd << std::endl;
-    }
-}
-
 // ================= ChangePromptCommand Class ===============
-ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt)
-    : BuiltInCommand(cmd_line), m_prompt(prompt) {}
-
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt) : BuiltInCommand(cmd_line), m_prompt(prompt) {}
 ChangePromptCommand::~ChangePromptCommand() {}
 
 void ChangePromptCommand::execute() {
@@ -98,6 +100,72 @@ ShowPidCommand::~ShowPidCommand() {}
 
 void ShowPidCommand::execute() {
     std::cout << "smash pid is " << getpid() << std::endl;
+}
+
+// ================= GetCurrDirCommand Class ===============
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+GetCurrDirCommand::~GetCurrDirCommand() {}
+
+void GetCurrDirCommand::execute() {
+    char cwd[COMMAND_MAX_LENGTH];
+    if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+        perror("smash error: getcwd failed");
+    }
+    else {
+        std::cout << cwd << std::endl;
+    }
+}
+
+// ================= ChangeDirCommand Class ===============
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastWorkingDir)
+    : BuiltInCommand(cmd_line), m_lastWorkingDir(lastWorkingDir) {}
+
+ChangeDirCommand::~ChangeDirCommand() {}
+
+void ChangeDirCommand::execute() {
+    char* args[COMMAND_MAX_ARGS];
+    int argCount = _parseCommandLine(m_cmd_line, args);
+
+    if (argCount == 1) {
+        // No argument provided, do nothing
+        for (int i = 0; i < argCount; ++i) {
+            free(args[i]);
+        }
+        return;
+    }
+
+    if (argCount > 2) {
+        std::cerr << "smash error: cd: too many arguments" << std::endl;
+        for (int i = 0; i < argCount; ++i) {
+            free(args[i]);
+        }
+        return;
+    }
+
+    std::string targetDir = args[1];
+    free(args[0]);
+    free(args[1]);
+
+    if (targetDir == "-") {
+        if (m_lastWorkingDir.empty()) {
+            std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+            return;
+        }
+        targetDir = m_lastWorkingDir;
+    }
+
+    char cwd[COMMAND_MAX_LENGTH];
+    if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+        perror("smash error: getcwd failed");
+        return;
+    }
+
+    if (chdir(targetDir.c_str()) == -1) {
+        perror("smash error: chdir failed");
+    }
+    else {
+        m_lastWorkingDir = std::string(cwd);
+    }
 }
 
 // ==================== ExternalCommand Class ==============
@@ -196,6 +264,9 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
     }
     else if (firstWord == "showpid") {
         return new ShowPidCommand(cmd_line);
+    }
+    if (firstWord == "cd") {
+        return new ChangeDirCommand(cmd_line, m_lastWorkingDir);
     }
     else {
         return new ExternalCommand(cmd_line); // Default to external command

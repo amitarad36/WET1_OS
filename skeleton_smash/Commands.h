@@ -10,10 +10,16 @@
 
 // Utility functions
 std::string _ltrim(const std::string& s);
+
 std::string _rtrim(const std::string& s);
+
 std::string _trim(const std::string& s);
+
 bool _isBackgroundCommand(const char* cmd_line);
+
 void _removeBackgroundSign(char* cmd_line);
+
+int _parseCommandLine(const char* cmd_line, char** args);
 
 // Command class hierarchy
 class Command {
@@ -33,13 +39,6 @@ public:
     virtual ~BuiltInCommand();
 };
 
-class GetCurrDirCommand : public BuiltInCommand {
-public:
-    GetCurrDirCommand(const char* cmd_line);
-    virtual ~GetCurrDirCommand();
-    void execute() override;
-};
-
 class ChangePromptCommand : public BuiltInCommand {
 private:
     std::string& m_prompt;
@@ -54,6 +53,23 @@ class ShowPidCommand : public BuiltInCommand {
 public:
     ShowPidCommand(const char* cmd_line);
     virtual ~ShowPidCommand();
+    void execute() override;
+};
+
+class GetCurrDirCommand : public BuiltInCommand {
+public:
+    GetCurrDirCommand(const char* cmd_line);
+    virtual ~GetCurrDirCommand();
+    void execute() override;
+};
+
+class ChangeDirCommand : public BuiltInCommand {
+private:
+    std::string& m_lastWorkingDir;
+
+public:
+    ChangeDirCommand(const char* cmd_line, std::string& lastWorkingDir);
+    virtual ~ChangeDirCommand();
     void execute() override;
 };
 
@@ -96,6 +112,7 @@ public:
 class SmallShell {
 private:
     std::string m_prompt;
+    std::string m_lastWorkingDir;
     JobsList m_jobsList;
     int m_foregroundPid;
     std::string m_foregroundCommand;
