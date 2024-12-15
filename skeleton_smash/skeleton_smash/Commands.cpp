@@ -196,36 +196,15 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line) : BuiltInCommand(
 
 ChangePromptCommand::~ChangePromptCommand() {}
 
-void ExternalCommand::execute() {
-	if (m_isBackground) {
-		pid_t pid = fork();
-		if (pid == 0) {  // Child process
-			setpgrp();  // Set a new process group for the child process
-
-			// Execute the command in the background
-			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
-			perror("Exec failed");
-			exit(1);  // Exit if exec fails
-		}
-		else {  // Parent process
-			// Add the background job to the job list
-			SmallShell::getInstance().getJobsList().addJob(pid, m_cmdLine, false);  // false means it's not stopped
-			std::cout << "Background job started with PID: " << pid << std::endl;
-		}
+void ChangePromptCommand::execute() {
+	SmallShell& shell = SmallShell::getInstance();
+	char* token = strtok((char*)m_cmd_line, " ");
+	token = strtok(nullptr, " ");
+	if (token) {
+		shell.setPrompt(string(token));
 	}
 	else {
-		// Handle the foreground job (non-background)
-		pid_t pid = fork();
-		if (pid == 0) {
-			// Execute the command in the foreground
-			execlp(m_cmdLine.c_str(), m_cmdLine.c_str(), (char*)NULL);
-			perror("Exec failed");
-			exit(1); // Exit if exec fails
-		}
-		else {
-			// Wait for the foreground job to finish
-			waitpid(pid, NULL, 0);
-		}
+		shell.setPrompt("smash");
 	}
 }
 
