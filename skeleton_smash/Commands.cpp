@@ -184,6 +184,7 @@ ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {
         m_cmdLine.pop_back();
     }
 }
+
 ExternalCommand::~ExternalCommand() {}
 
 void ExternalCommand::execute() {
@@ -210,6 +211,7 @@ void ExternalCommand::execute() {
         perror("smash error: fork failed");
     }
 }
+
 
 // ================= JobsList::JobEntry Class ==============
 JobsList::JobEntry::JobEntry(int jobId, const std::string& command, int pid, bool isStopped)
