@@ -1,1 +1,0 @@
-g++ -o smash Commands.cpp signals.cpp smash.cpp -std=c++11
