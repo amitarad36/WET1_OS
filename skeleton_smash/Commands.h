@@ -73,16 +73,6 @@ public:
     void execute() override;
 };
 
-class JobsCommand : public BuiltInCommand {
-private:
-    JobsList& m_jobsList;
-
-public:
-    JobsCommand(const char* cmd_line, JobsList& jobsList);
-    virtual ~JobsCommand();
-    void execute() override;
-};
-
 class ExternalCommand : public Command {
 private:
     std::string m_cmdLine;
@@ -117,6 +107,16 @@ public:
     void removeFinishedJobs();
     void printJobsList() const;
     void killAllJobs();
+};
+
+class JobsCommand : public BuiltInCommand {
+private:
+    JobsList& m_jobsList;
+
+public:
+    JobsCommand(const char* cmd_line, JobsList& jobsList);
+    virtual ~JobsCommand();
+    void execute() override;
 };
 
 class SmallShell {
