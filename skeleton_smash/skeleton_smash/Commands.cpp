@@ -126,7 +126,7 @@ Command::Command(const char* cmd_line) : m_cmd_line(cmd_line), m_command_seg() {
 	vecFromLine(cmd_line, m_command_seg);
 }
 
-Command::~Command() {}
+Command::~Command() {} 
 
 string Command::getCommandLine() {
 	return string(m_cmd_line);
