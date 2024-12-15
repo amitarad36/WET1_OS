@@ -193,6 +193,7 @@ private:
     JobsList jobs;
     int foregroundPid;
     std::string foregroundCommand;
+    std::map<std::string, std::string> aliasMap;
     SmallShell();
 
 public:
