@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <string.h>
 #include <cstdlib>
+#include <stdexcept>
 
 
 // Utility Functions
@@ -349,6 +350,63 @@ void BackgroundCommand::execute() {
 	std::cout << job->command << " resumed" << std::endl;
 }
 
+// AliasCommand Class
+AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap)
+	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
+AliasCommand::~AliasCommand() {}
+void AliasCommand::execute() {
+	char* args[COMMAND_MAX_ARGS];
+	int argc = _parseCommandLine(cmdLine, args);
+
+	if (argc != 3) {
+		std::cerr << "smash error: alias: invalid arguments" << std::endl;
+		return;
+	}
+
+	std::string aliasName = args[1];
+	std::string aliasCommand = args[2];
+
+	// Prevent alias loops
+	if (aliasCommand == aliasName) {
+		std::cerr << "smash error: alias: alias loop detected" << std::endl;
+		return;
+	}
+
+	aliasMap[aliasName] = aliasCommand;
+	std::cout << "Alias added: " << aliasName << " -> " << aliasCommand << std::endl;
+
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
+	}
+}
+
+// UnaliasCommand Class
+UnaliasCommand::UnaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap)
+	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
+UnaliasCommand::~UnaliasCommand() {}
+void UnaliasCommand::execute() {
+	char* args[COMMAND_MAX_ARGS];
+	int argc = _parseCommandLine(cmdLine, args);
+
+	if (argc != 2) {
+		std::cerr << "smash error: unalias: invalid arguments" << std::endl;
+		return;
+	}
+
+	std::string aliasName = args[1];
+
+	if (aliasMap.erase(aliasName) == 0) {
+		std::cerr << "smash error: unalias: alias \"" << aliasName << "\" does not exist" << std::endl;
+	}
+	else {
+		std::cout << "Alias \"" << aliasName << "\" removed" << std::endl;
+	}
+
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
+	}
+}
+
 // SmallShell Class
 SmallShell::SmallShell()
 	: prompt("smash"), lastWorkingDir(""), foregroundPid(-1), foregroundCommand("") {}
@@ -428,3 +486,28 @@ int SmallShell::getForegroundPid() const {
 std::string SmallShell::getForegroundCommand() const {
 	return foregroundCommand;
 }
+void SmallShell::setAlias(const std::string& aliasName, const std::string& aliasCommand) {
+	if (aliasCommand == aliasName) {
+		std::cerr << "smash error: alias: alias loop detected" << std::endl;
+		return;
+	}
+	aliasMap[aliasName] = aliasCommand;
+}
+void SmallShell::removeAlias(const std::string& aliasName) {
+	if (aliasMap.erase(aliasName) == 0) {
+		std::cerr << "smash error: unalias: alias \"" << aliasName << "\" does not exist" << std::endl;
+	}
+}
+std::string SmallShell::getAlias(const std::string& aliasName) const {
+	auto it = aliasMap.find(aliasName);
+	if (it != aliasMap.end()) {
+		return it->second;
+	}
+	return ""; // Alias not found
+}
+void SmallShell::printAliases() const {
+	for (const auto& alias : aliasMap) {
+		std::cout << alias.first << " -> " << alias.second << std::endl;
+	}
+}
+

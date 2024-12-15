@@ -43,6 +43,7 @@ public:
 
     std::string getCommandLine() const; // Get the full command line
 };
+
 class BuiltInCommand : public Command {
 public:
     BuiltInCommand(const char* cmd_line);
@@ -164,6 +165,26 @@ public:
     void execute() override;
 };
 
+class AliasCommand : public BuiltInCommand {
+private:
+    std::map<std::string, std::string>& aliasMap;
+
+public:
+    AliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap);
+    ~AliasCommand();
+    void execute() override;
+};
+
+class UnaliasCommand : public BuiltInCommand {
+private:
+    std::map<std::string, std::string>& aliasMap;
+
+public:
+    UnaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap);
+    ~UnaliasCommand();
+    void execute() override;
+};
+
 class SmallShell {
 private:
     std::string prompt;
@@ -187,6 +208,10 @@ public:
     int getForegroundPid() const;
     std::string getForegroundCommand() const;
     const JobsList& getJobsList() const;
+    void setAlias(const std::string& aliasName, const std::string& aliasCommand);
+    void removeAlias(const std::string& aliasName);
+    std::string getAlias(const std::string& aliasName) const;
+    void printAliases() const;
 };
 
 #endif // SMASH_COMMANDS_H_
