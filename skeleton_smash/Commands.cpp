@@ -227,10 +227,15 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
 }
 
 void SmallShell::executeCommand(const char* cmd_line) {
+    std::cout << "Debug: Executing command: \"" << cmd_line << "\"" << std::endl;
     Command* cmd = CreateCommand(cmd_line);
     if (cmd) {
+        std::cout << "Debug: Command created successfully" << std::endl;
         cmd->execute();
         delete cmd;
+    }
+    else {
+        std::cout << "Debug: Command creation failed" << std::endl;
     }
 }
 
