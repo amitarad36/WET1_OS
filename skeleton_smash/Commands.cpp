@@ -37,21 +37,31 @@ void _removeBackgroundSign(char* cmd_line) {
 }
 
 int _parseCommandLine(const char* cmd_line, char** args) {
+    if (cmd_line == nullptr || strlen(cmd_line) == 0) {
+        // Empty input: No arguments to parse
+        args[0] = nullptr;
+        return 0;
+    }
+
     int i = 0;
-    std::istringstream iss(_trim(std::string(cmd_line)));
+    std::istringstream iss(_trim(std::string(cmd_line))); // Trim and initialize input stream
     for (std::string s; iss >> s;) {
-        args[i] = (char*)malloc(s.length() + 1);
+        args[i] = (char*)malloc(s.length() + 1); // Allocate memory for each argument
         if (args[i] == nullptr) {
             perror("smash error: malloc failed");
             exit(1);
         }
-        strcpy(args[i], s.c_str());
+        strcpy(args[i], s.c_str()); // Copy the token into the argument array
         i++;
+
+        if (i >= COMMAND_MAX_ARGS) {
+            std::cerr << "smash error: too many arguments" << std::endl;
+            break;
+        }
     }
     args[i] = nullptr; // Null-terminate the argument list
     return i;
 }
-
 
 // ======================= Command Class ====================
 Command::Command(const char* cmd_line) : m_cmd_line(cmd_line) {}
@@ -176,7 +186,6 @@ void JobsCommand::execute() {
     m_jobsList.printJobsList();      // Print remaining jobs
 }
 
-
 // ==================== ExternalCommand Class ==============
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {
     m_isBackground = (m_cmdLine.back() == '&');
@@ -188,32 +197,38 @@ ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {
 ExternalCommand::~ExternalCommand() {}
 
 void ExternalCommand::execute() {
+    // Check if the command is complex (contains * or ?)
+    bool isComplex = (m_cmdLine.find('*') != std::string::npos || m_cmdLine.find('?') != std::string::npos);
+
     pid_t pid = fork();
     if (pid == 0) { // Child process
         setpgrp();
 
-        // Parse command line into arguments
-        char* args[COMMAND_MAX_ARGS];
-        int argCount = _parseCommandLine(m_cmdLine.c_str(), args);
-
-        // Debug: Print parsed arguments
-        std::cout << "Debug: Parsed command: \"" << args[0] << "\" with arguments: ";
-        for (int i = 0; i < argCount; i++) {
-            std::cout << "\"" << args[i] << "\" ";
+        if (isComplex) {
+            // Complex command: Use bash -c
+            char* bashArgs[] = { (char*)"/bin/bash", (char*)"-c", (char*)m_cmdLine.c_str(), nullptr };
+            execv("/bin/bash", bashArgs);
         }
-        std::cout << std::endl;
+        else {
+            // Simple command: Parse and execute directly
+            char* args[COMMAND_MAX_ARGS];
+            int argCount = _parseCommandLine(m_cmdLine.c_str(), args);
+            execvp(args[0], args);
+        }
 
-        execvp(args[0], args); // Execute command
-        perror("Exec failed"); // If execvp returns, it's an error
+        // If exec fails, print an error and exit
+        perror("smash error: exec failed");
         exit(1);
     }
     else if (pid > 0) { // Parent process
         SmallShell& shell = SmallShell::getInstance();
         if (m_isBackground) {
+            // Add to jobs list for background commands
             shell.getJobsList().addJob(pid, m_cmdLine, false);
             std::cout << "Background job started with PID: " << pid << std::endl;
         }
         else {
+            // Wait for foreground commands
             shell.setForegroundJob(pid, m_cmdLine);
             waitpid(pid, nullptr, 0);
             shell.clearForegroundJob();
@@ -223,7 +238,6 @@ void ExternalCommand::execute() {
         perror("smash error: fork failed");
     }
 }
-
 
 // ================= JobsList::JobEntry Class ==============
 JobsList::JobEntry::JobEntry(int jobId, const std::string& command, int pid, bool isStopped)
