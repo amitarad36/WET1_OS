@@ -4,4 +4,6 @@
 
 - signals and forks...
 
+- g++ -std=c++11 -Wall -g Commands.cpp smash.cpp signals.cpp -o smash
+
 - wget https://github.com/Kitware/CMake/releases/latest/download/cmake-<latest-version>-linux-x86_64.sh
