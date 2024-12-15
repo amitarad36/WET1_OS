@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstring>
 #include <csignal>
+#include <sstream>
 
 // Utility functions
 std::string _ltrim(const std::string& s) {
