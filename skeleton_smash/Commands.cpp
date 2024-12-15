@@ -212,7 +212,7 @@ void ExternalCommand::execute() {
         else {
             // Simple command: Parse and execute directly
             char* args[COMMAND_MAX_ARGS];
-            int argCount = _parseCommandLine(m_cmdLine.c_str(), args);
+            _parseCommandLine(m_cmdLine.c_str(), args); // No need to store argCount
             execvp(args[0], args);
         }
 
