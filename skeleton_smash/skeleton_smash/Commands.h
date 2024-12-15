@@ -125,13 +125,13 @@ public:
 	class JobEntry {
 	public:
 		int m_jobId;
-		const std::string& m_cmdLine;
+		std::string m_cmdLine;
 		std::string m_command;
 		int m_pid;
 		bool m_isStopped;
 
 		JobEntry(int jobId, const std::string& cmdLine, int pid, bool isStopped)
-			: m_jobId(jobId), m_cmdLine(cmdLine), m_pid(pid), m_isStopped(isStopped) {}
+			: m_jobId(jobId), m_cmdLine(cmdLine), m_command(cmdLine), m_pid(pid), m_isStopped(isStopped) {}
 	};
 
 private:
