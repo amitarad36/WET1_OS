@@ -67,20 +67,14 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prom
 ChangePromptCommand::~ChangePromptCommand() {}
 
 void ChangePromptCommand::execute() {
-    // Debug: Starting the execution of ChangePromptCommand
-    std::cout << "Debug: Entering ChangePromptCommand::execute()" << std::endl;
-    std::cout << "Debug: Raw command line: \"" << m_cmd_line << "\"" << std::endl;
-
     // Trim and parse the command line
     std::string cmd_str = _trim(std::string(m_cmd_line));
-    std::cout << "Debug: Trimmed command line: \"" << cmd_str << "\"" << std::endl;
 
     size_t first_space = cmd_str.find(' ');
 
     if (first_space == std::string::npos) {
         // No argument provided, reset to "smash"
         m_prompt = "smash";
-        std::cout << "Debug: No arguments provided. Resetting prompt to \"smash\"" << std::endl;
     }
     else {
         // Extract the argument after the first space
@@ -95,7 +89,6 @@ void ChangePromptCommand::execute() {
 
         // Update the prompt
         m_prompt = new_prompt;
-        std::cout << "Debug: New prompt set to: \"" << m_prompt << "\"" << std::endl;
     }
 }
 
@@ -191,45 +184,29 @@ SmallShell& SmallShell::getInstance() {
 }
 
 Command* SmallShell::CreateCommand(const char* cmd_line) {
-    // Debug: Raw input command line
-    std::cout << "Debug: Raw input: \"" << cmd_line << "\"" << std::endl;
-
     std::string cmd_s = _trim(std::string(cmd_line));
-    // Debug: Trimmed command line
-    std::cout << "Debug: Trimmed command: \"" << cmd_s << "\"" << std::endl;
 
     std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
-    // Debug: First word extracted
-    std::cout << "Debug: First word: \"" << firstWord << "\"" << std::endl;
 
     if (firstWord == "chprompt") {
-        std::cout << "Debug: Creating ChangePromptCommand" << std::endl;
         return new ChangePromptCommand(cmd_line, m_prompt);
     }
     else if (firstWord == "pwd") {
-        std::cout << "Debug: Creating GetCurrDirCommand" << std::endl;
         return new GetCurrDirCommand(cmd_line);
     }
     else if (firstWord == "showpid") {
-        std::cout << "Debug: Creating ShowPidCommand" << std::endl;
         return new ShowPidCommand(cmd_line);
     }
     else {
-        std::cout << "Debug: Creating ExternalCommand" << std::endl;
         return new ExternalCommand(cmd_line); // Default to external command
     }
 }
 
 void SmallShell::executeCommand(const char* cmd_line) {
-    std::cout << "Debug: Executing command: \"" << cmd_line << "\"" << std::endl;
     Command* cmd = CreateCommand(cmd_line);
     if (cmd) {
-        std::cout << "Debug: Command created successfully" << std::endl;
         cmd->execute();
         delete cmd;
-    }
-    else {
-        std::cout << "Debug: Command creation failed" << std::endl;
     }
 }
 
