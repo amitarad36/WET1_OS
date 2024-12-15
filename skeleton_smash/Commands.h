@@ -40,6 +40,16 @@ public:
     void execute() override;
 };
 
+class ChangePromptCommand : public BuiltInCommand {
+private:
+    std::string& m_prompt;
+
+public:
+    ChangePromptCommand(const char* cmd_line, std::string& prompt);
+    virtual ~ChangePromptCommand();
+    void execute() override;
+};
+
 class ShowPidCommand : public BuiltInCommand {
 public:
     ShowPidCommand(const char* cmd_line);

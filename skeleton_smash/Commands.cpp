@@ -60,6 +60,25 @@ void GetCurrDirCommand::execute() {
     }
 }
 
+// ================= ChangePromptCommand Class ==============
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt)
+    : BuiltInCommand(cmd_line), m_prompt(prompt) {}
+
+ChangePromptCommand::~ChangePromptCommand() {}
+
+void ChangePromptCommand::execute() {
+    // Tokenize the command line
+    char* token = strtok((char*)m_cmd_line, " ");
+    token = strtok(nullptr, " "); // Get the second token (the new prompt)
+
+    if (token) {
+        m_prompt = std::string(token); // Set the prompt to the provided string
+    }
+    else {
+        m_prompt = "smash"; // Default to "smash" if no argument is provided
+    }
+}
+
 // ================== ShowPidCommand Class =================
 ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
 ShowPidCommand::~ShowPidCommand() {}
