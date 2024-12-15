@@ -197,19 +197,31 @@ SmallShell& SmallShell::getInstance() {
 }
 
 Command* SmallShell::CreateCommand(const char* cmd_line) {
+    // Debug: Raw input command line
+    std::cout << "Debug: Raw input: \"" << cmd_line << "\"" << std::endl;
+
     std::string cmd_s = _trim(std::string(cmd_line));
+    // Debug: Trimmed command line
+    std::cout << "Debug: Trimmed command: \"" << cmd_s << "\"" << std::endl;
+
     std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
+    // Debug: First word extracted
+    std::cout << "Debug: First word: \"" << firstWord << "\"" << std::endl;
 
     if (firstWord == "chprompt") {
+        std::cout << "Debug: Creating ChangePromptCommand" << std::endl;
         return new ChangePromptCommand(cmd_line, m_prompt);
     }
     else if (firstWord == "pwd") {
+        std::cout << "Debug: Creating GetCurrDirCommand" << std::endl;
         return new GetCurrDirCommand(cmd_line);
     }
     else if (firstWord == "showpid") {
+        std::cout << "Debug: Creating ShowPidCommand" << std::endl;
         return new ShowPidCommand(cmd_line);
     }
     else {
+        std::cout << "Debug: Creating ExternalCommand" << std::endl;
         return new ExternalCommand(cmd_line); // Default to external command
     }
 }
