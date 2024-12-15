@@ -118,9 +118,7 @@ void GetCurrDirCommand::execute() {
 }
 
 // ================= ChangeDirCommand Class ===============
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastWorkingDir)
-    : BuiltInCommand(cmd_line), m_lastWorkingDir(lastWorkingDir) {}
-
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastWorkingDir) : BuiltInCommand(cmd_line), m_lastWorkingDir(lastWorkingDir) {}
 ChangeDirCommand::~ChangeDirCommand() {}
 
 void ChangeDirCommand::execute() {
@@ -169,6 +167,16 @@ void ChangeDirCommand::execute() {
     }
 }
 
+// ================= JobsCommand Class ===============
+JobsCommand::JobsCommand(const char* cmd_line, JobsList& jobsList) : BuiltInCommand(cmd_line), m_jobsList(jobsList) {}
+JobsCommand::~JobsCommand() {}
+
+void JobsCommand::execute() {
+    m_jobsList.removeFinishedJobs(); // Remove completed jobs
+    m_jobsList.printJobsList();      // Print remaining jobs
+}
+
+
 // ==================== ExternalCommand Class ==============
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {
     m_isBackground = (m_cmdLine.back() == '&');
@@ -212,7 +220,10 @@ JobsList::JobsList() : m_lastJobId(0) {}
 JobsList::~JobsList() {}
 
 void JobsList::addJob(int pid, const std::string& command, bool isStopped) {
+    // Ensure finished jobs are removed
     removeFinishedJobs();
+
+    // Add the new job with a unique ID
     m_jobs.emplace_back(++m_lastJobId, command, pid, isStopped);
 }
 
@@ -266,8 +277,11 @@ Command* SmallShell::CreateCommand(const char* cmd_line) {
     else if (firstWord == "showpid") {
         return new ShowPidCommand(cmd_line);
     }
-    if (firstWord == "cd") {
+    else if (firstWord == "cd") {
         return new ChangeDirCommand(cmd_line, m_lastWorkingDir);
+    }
+    else if (firstWord == "jobs") {
+        return new JobsCommand(cmd_line, m_jobsList);
     }
     else {
         return new ExternalCommand(cmd_line); // Default to external command
