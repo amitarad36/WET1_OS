@@ -73,13 +73,20 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prom
 ChangePromptCommand::~ChangePromptCommand() {}
 
 void ChangePromptCommand::execute() {
+    // Debug: Starting the execution of ChangePromptCommand
+    std::cout << "Debug: Entering ChangePromptCommand::execute()" << std::endl;
+    std::cout << "Debug: Raw command line: \"" << m_cmd_line << "\"" << std::endl;
+
     // Trim and parse the command line
     std::string cmd_str = _trim(std::string(m_cmd_line));
+    std::cout << "Debug: Trimmed command line: \"" << cmd_str << "\"" << std::endl;
+
     size_t first_space = cmd_str.find(' ');
 
     if (first_space == std::string::npos) {
         // No argument provided, reset to "smash"
         m_prompt = "smash";
+        std::cout << "Debug: No arguments provided. Resetting prompt to \"smash\"" << std::endl;
     }
     else {
         // Extract the argument after the first space
@@ -94,6 +101,7 @@ void ChangePromptCommand::execute() {
 
         // Update the prompt
         m_prompt = new_prompt;
+        std::cout << "Debug: New prompt set to: \"" << m_prompt << "\"" << std::endl;
     }
 }
 
