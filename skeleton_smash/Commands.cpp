@@ -60,7 +60,7 @@ void GetCurrDirCommand::execute() {
     }
 }
 
-// ================= ChangePromptCommand Class ==============
+// ================= ChangePromptCommand Class ===============
 ChangePromptCommand::ChangePromptCommand(const char* cmd_line, std::string& prompt)
     : BuiltInCommand(cmd_line), m_prompt(prompt) {}
 
@@ -68,16 +68,20 @@ ChangePromptCommand::~ChangePromptCommand() {}
 
 void ChangePromptCommand::execute() {
     // Tokenize the command line
-    char* token = strtok((char*)m_cmd_line, " ");
-    token = strtok(nullptr, " "); // Get the second token (the new prompt)
+    char* cmd_copy = strdup(m_cmd_line); // Duplicate command line to manipulate
+    char* token = strtok(cmd_copy, " "); // Skip the command name ("chprompt")
+    token = strtok(nullptr, " ");       // Get the first argument, if any
 
     if (token) {
-        m_prompt = std::string(token); // Set the prompt to the provided string
+        m_prompt = std::string(token);  // Set the prompt to the provided argument
     }
     else {
-        m_prompt = "smash"; // Default to "smash" if no argument is provided
+        m_prompt = "smash";             // Reset to default if no argument is given
     }
+
+    free(cmd_copy); // Free the duplicated string
 }
+
 
 // ================== ShowPidCommand Class =================
 ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
