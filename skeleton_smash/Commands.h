@@ -1,86 +1,91 @@
-#ifndef SMASH_COMMAND_H_
-#define SMASH_COMMAND_H_
+#ifndef SMASH_COMMANDS_H_
+#define SMASH_COMMANDS_H_
 
 #include <string>
 #include <vector>
+#include <list>
+#include <map>
 
-#define COMMAND_MAX_LENGTH (200)
-#define COMMAND_MAX_ARGS (20)
-#define WHITESPACE " \n\r\t\f\v"
+// constants
+constexpr int MAX_SIZE = 256;
+constexpr int COMMAND_MAX_LENGTH = 200;
+constexpr int COMMAND_MAX_ARGS = 20;
 
-// Utility functions
-std::string _ltrim(const std::string& s);
+std::string _trim(const std::string& str);
+int _parseCommandLine(const std::string& cmd_line, char** args);
 
-std::string _rtrim(const std::string& s);
 
-std::string _trim(const std::string& s);
+class JobsList;
 
-bool _isBackgroundCommand(const char* cmd_line);
-
-void _removeBackgroundSign(char* cmd_line);
-
-int _parseCommandLine(const char* cmd_line, char** args);
-
-// Command class hierarchy
 class Command {
 protected:
-    const char* m_cmd_line;
+    std::vector<std::string> cmdSegments; // Parsed segments of the command
+    int processId; // Process ID of the command
+    bool isBackground; // Whether the command runs in the background
+    std::string cmdLine; // Original command line
+    std::string alias; // Alias for the command
+    std::string fileRedirect; // File redirection path
 
 public:
     Command(const char* cmd_line);
     virtual ~Command();
-    virtual void execute() = 0;
-    std::string getCommandLine() const;
-};
 
+    virtual void execute() = 0; // Pure virtual execute method
+
+    int getProcessId() const; // Get the process ID
+    void setProcessId(int pid); // Set the process ID
+
+    std::string getAlias() const; // Get the alias
+    void setAlias(const std::string& aliasCommand); // Set the alias
+
+    std::string getPath() const; // Get the file redirection path
+    void setPath(const std::string& path); // Set the file redirection path
+
+    std::string getCommandLine() const; // Get the full command line
+};
 class BuiltInCommand : public Command {
 public:
     BuiltInCommand(const char* cmd_line);
     virtual ~BuiltInCommand();
 };
 
+class ExternalCommand : public Command {
+public:
+    ExternalCommand(const char* cmd_line);
+    virtual ~ExternalCommand() {}
+    void execute() override;
+};
+
 class ChangePromptCommand : public BuiltInCommand {
 private:
-    std::string& m_prompt;
+    std::string& prompt;
 
 public:
     ChangePromptCommand(const char* cmd_line, std::string& prompt);
-    virtual ~ChangePromptCommand();
+    ~ChangePromptCommand();
+    void execute() override;
+};
+
+class ChangeDirCommand : public BuiltInCommand {
+    std::string& lastWorkingDir;
+
+public:
+    ChangeDirCommand(const char* cmd_line, std::string& lastDir);
+    ~ChangeDirCommand();
     void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
 public:
     ShowPidCommand(const char* cmd_line);
-    virtual ~ShowPidCommand();
+    ~ShowPidCommand();
     void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
 public:
     GetCurrDirCommand(const char* cmd_line);
-    virtual ~GetCurrDirCommand();
-    void execute() override;
-};
-
-class ChangeDirCommand : public BuiltInCommand {
-private:
-    std::string& m_lastWorkingDir;
-
-public:
-    ChangeDirCommand(const char* cmd_line, std::string& lastWorkingDir);
-    virtual ~ChangeDirCommand();
-    void execute() override;
-};
-
-class ExternalCommand : public Command {
-private:
-    std::string m_cmdLine;
-    bool m_isBackground;
-
-public:
-    ExternalCommand(const char* cmd_line);
-    virtual ~ExternalCommand();
+    ~GetCurrDirCommand();
     void execute() override;
 };
 
@@ -88,60 +93,100 @@ class JobsList {
 public:
     class JobEntry {
     public:
-        int m_jobId;
-        std::string m_command;
-        int m_pid;
-        bool m_isStopped;
+        int jobId;
+        int pid;
+        bool isStopped;
+        std::string command;
 
-        JobEntry(int jobId, const std::string& command, int pid, bool isStopped);
+        JobEntry(int jobId, int pid, const std::string& command, bool isStopped)
+            : jobId(jobId), pid(pid), command(command), isStopped(isStopped) {}
+        ~JobEntry() {}
+
     };
 
 private:
-    std::vector<JobEntry> m_jobs;
-    int m_lastJobId;
+    std::list<JobEntry*> jobs;
 
 public:
     JobsList();
     ~JobsList();
-    void addJob(int pid, const std::string& command, bool isStopped);
+    void addJob(Command* cmd, int pid, bool isStopped = false);
+    void printJobs() const;
     void removeFinishedJobs();
-    void printJobsList() const;
+    JobEntry* getJobById(int jobId);
+    void removeJobById(int jobId);
     void killAllJobs();
 };
 
 class JobsCommand : public BuiltInCommand {
 private:
-    JobsList& m_jobsList;
+    JobsList* m_jobsList;
 
 public:
-    JobsCommand(const char* cmd_line, JobsList& jobsList);
+    JobsCommand(const char* cmd_line, JobsList* jobsList);
     virtual ~JobsCommand();
+    void execute() override;
+};
+
+class KillCommand : public BuiltInCommand {
+    JobsList* jobsList;
+
+public:
+    KillCommand(const char* cmd_line, JobsList* jobs);
+    ~KillCommand();
+    void execute() override;
+};
+
+class QuitCommand : public BuiltInCommand {
+    JobsList* jobsList;
+
+public:
+    QuitCommand(const char* cmd_line, JobsList* jobs);
+    ~QuitCommand();
+    void execute() override;
+};
+
+class ForegroundCommand : public BuiltInCommand {
+    JobsList* jobsList;
+
+public:
+    ForegroundCommand(const char* cmd_line, JobsList* jobs);
+    ~ForegroundCommand();
+    void execute() override;
+};
+
+class BackgroundCommand : public BuiltInCommand {
+    JobsList* jobsList;
+
+public:
+    BackgroundCommand(const char* cmd_line, JobsList* jobs);
+    ~BackgroundCommand();
     void execute() override;
 };
 
 class SmallShell {
 private:
-    std::string m_prompt;
-    std::string m_lastWorkingDir;
-    JobsList m_jobsList;
-    int m_foregroundPid;
-    std::string m_foregroundCommand;
-
+    std::string prompt;
+    std::string lastWorkingDir;
+    std::string prevWorkingDir;
+    JobsList jobs;
+    int foregroundPid;
+    std::string foregroundCommand;
     SmallShell();
 
 public:
     ~SmallShell();
     static SmallShell& getInstance();
+    Command* createCommand(const char* cmd_line);
+    void executeCommand(const char* cmd_line);
     std::string getPrompt() const;
-    void setPrompt(const std::string& prompt);
+    void setPrompt(const std::string& newPrompt);
+    void updateWorkingDirectory(const std::string& newDir);
     void setForegroundJob(int pid, const std::string& command);
     void clearForegroundJob();
     int getForegroundPid() const;
     std::string getForegroundCommand() const;
-    JobsList& getJobsList();
-
-    Command* CreateCommand(const char* cmd_line);
-    void executeCommand(const char* cmd_line);
+    const JobsList& getJobsList() const;
 };
 
-#endif // SMASH_COMMAND_H_
+#endif // SMASH_COMMANDS_H_
