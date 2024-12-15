@@ -169,9 +169,8 @@ void ExternalCommand::execute() {
 			exit(1); // Exit if exec fails
 		}
 		else {  // Parent process
-			// Add the job to the JobsList
-			JobEntry job(pid, m_cmdLine);
-			SmallShell::getInstance().getJobsList().addJob(job); // Ensure job is added
+			// Add the background job to the job list
+			SmallShell::getInstance().getJobsList().addJob(this, false);  // Pass the command and stopped status
 			std::cout << "Background job started with PID: " << pid << std::endl;
 		}
 	}
