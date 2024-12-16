@@ -245,6 +245,9 @@ JobsList::~JobsList() {
 int JobsList::size() const {
 	return jobs.size();
 }
+const std::list<JobsList::JobEntry*>& JobsList::getJobs() const {
+	return jobs;
+}
 void JobsList::addJob(const std::string& command, int pid, bool isStopped) {
 	removeFinishedJobs(); // Clean up finished jobs
 	int jobId = ++lastJobId;
@@ -316,35 +319,71 @@ void JobsCommand::execute() {
 // KillCommand Class
 KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
 KillCommand::~KillCommand() {}
-void QuitCommand::execute() {
-	if (strstr(cmdLine.c_str(), "kill")) {
-		// Print the message about sending SIGKILL signals
-		std::cout << "smash: sending SIGKILL signal to " << jobsList->size() << " jobs:" << std::endl;
+void KillCommand::execute() {
+	char* args[COMMAND_MAX_ARGS];
+	int argc = _parseCommandLine(cmdLine, args);
 
-		// Iterate through all jobs and print their details
-		for (auto& job : jobsList->getJobs()) {
-			std::cout << job->pid << ": " << job->command << std::endl;
-			if (kill(job->pid, SIGKILL) == -1) {
-				perror("smash error: kill failed");
-			}
+	// Check for valid arguments: exactly 3 arguments and the second argument starts with '-'
+	if (argc != 3 || args[1][0] != '-') {
+		std::cerr << "smash error: kill: invalid arguments" << std::endl;
+		for (int i = 0; i < argc; ++i) {
+			free(args[i]);
 		}
-
-		// Clear the jobs list
-		jobsList->clear();
+		return;
 	}
-	exit(0);
+
+	// Parse the signal number and job ID
+	int signal = atoi(args[1] + 1);  // Skip the '-' character
+	int jobId = atoi(args[2]);
+
+	// Find the job in the JobsList
+	JobsList::JobEntry* job = jobsList->getJobById(jobId);
+	if (!job) {
+		std::cerr << "smash error: kill: job-id " << jobId << " does not exist" << std::endl;
+		for (int i = 0; i < argc; ++i) {
+			free(args[i]);
+		}
+		return;
+	}
+
+	// Send the signal to the process
+	if (kill(job->pid, signal) == -1) {
+		perror("smash error: kill failed");
+	}
+	else {
+		std::cout << "signal number " << signal << " was sent to pid " << job->pid << std::endl;
+	}
+
+	// Free allocated memory
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
+	}
 }
 
 
 // QuitCommand Class
-QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
+QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs)
+	: BuiltInCommand(cmd_line), jobsList(jobs) {}
 QuitCommand::~QuitCommand() {}
-void QuitCommand::execute() {
-	if (strstr(cmdLine.c_str(), "kill")) {
-		jobsList->killAllJobs();
+class QuitCommand : public BuiltInCommand {
+public:
+	QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+	~QuitCommand() {}
+	void execute() override {
+		JobsList& jobsList = SmallShell::getInstance().getJobsList();
+		if (strstr(cmdLine.c_str(), "kill")) {
+			std::cout << "smash: sending SIGKILL signal to " << jobsList.getJobs().size() << " jobs:" << std::endl;
+			for (const auto& job : jobsList.getJobs()) {
+				std::cout << job->pid << ": " << job->command << std::endl;
+				if (kill(job->pid, SIGKILL) == -1) {
+					perror("smash error: kill failed");
+				}
+			}
+			jobsList.killAllJobs(); // Clear jobs after killing them
+		}
+		exit(0);
 	}
-	exit(0);
-}
+};
 
 
 // ForegroundCommand Class
