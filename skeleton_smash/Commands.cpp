@@ -504,7 +504,7 @@ void RedirectionCommand::execute() {
 	}
 	close(fd);
 
-	Command* cmd = SmallShell::getInstance().CreateCommand(cmdLine.c_str());
+	Command* cmd = SmallShell::getInstance().createCommand(cmdLine.c_str());
 	if (cmd) {
 		cmd->execute();
 		delete cmd;
