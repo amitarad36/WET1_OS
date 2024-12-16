@@ -80,6 +80,13 @@ bool isDirectory(const std::string& path) {
 	}
 	return S_ISDIR(statbuf.st_mode);
 }
+void _trimAmp(std::string& cmd_line) {
+	cmd_line = _trim(cmd_line); // Remove leading/trailing spaces
+	if (!cmd_line.empty() && cmd_line.back() == '&') {
+		cmd_line.pop_back(); // Remove the `&` character
+		cmd_line = _trim(cmd_line); // Clean up trailing spaces again
+	}
+}
 
 
 // Command Class
@@ -583,17 +590,18 @@ void ListDirCommand::listDirectoryRecursively(const std::string& path, const std
 	}
 }
 void ListDirCommand::execute() {
-	if (cmd_segments.size() > 2) {
+	if (cmdSegments.size() > 2) {
 		std::cerr << "smash error: listdir: too many arguments" << std::endl;
 		return;
 	}
 
-	std::string directoryPath = (cmd_segments.size() == 1)
-		? SmallShell::getInstance().getPWD()
-		: cmd_segments[1];
+	// Use SmallShell::getPwd to get the current working directory if no argument is provided
+	std::string directoryPath = (cmdSegments.size() == 1)
+		? SmallShell::getInstance().getPwd()
+		: cmdSegments[1];
 
 	// Remove trailing background sign '&'
-	_removeBackgroundSignTemp(directoryPath);
+	_trimAmp(directoryPath);
 
 	if (!isDirectory(directoryPath)) {
 		perror("smash error: listdir");
@@ -661,6 +669,14 @@ void SmallShell::executeCommand(const char* cmd_line) {
 		cmd->execute();
 		delete cmd;
 	}
+}
+std::string SmallShell::getPwd() const {
+	char cwd[COMMAND_MAX_LENGTH];
+	if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+		perror("smash error: getcwd failed");
+		return ""; // Return an empty string if getting the working directory fails
+	}
+	return std::string(cwd); // Convert to a `std::string` and return
 }
 std::string SmallShell::getPrompt() const {
 	return prompt + "> ";

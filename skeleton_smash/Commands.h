@@ -12,7 +12,8 @@ constexpr int COMMAND_MAX_ARGS = 20;
 
 std::string _trim(const std::string& str);
 int _parseCommandLine(const std::string& cmd_line, char** args);
-
+bool isDirectory(const std::string& path);
+void _trimAmp(std::string& cmd_line);
 
 class JobsList;
 
@@ -221,6 +222,7 @@ public:
     static SmallShell& getInstance();
     Command* createCommand(const char* cmd_line);
     void executeCommand(const char* cmd_line);
+    std::string getPwd() const;
     std::string getPrompt() const;
     void setPrompt(const std::string& newPrompt);
     void updateWorkingDirectory(const std::string& newDir);
