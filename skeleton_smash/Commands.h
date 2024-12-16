@@ -68,7 +68,6 @@ public:
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-    std::string& lastWorkingDir;
 
 public:
     ChangeDirCommand(const char* cmd_line, std::string& lastDir);
@@ -224,6 +223,8 @@ public:
     static SmallShell& getInstance();
     Command* createCommand(const char* cmd_line);
     void executeCommand(const char* cmd_line);
+    std::string getLastWorkingDir() const;
+    void setLastWorkingDir(const std::string& dir);
     std::string getPwd() const;
     std::string getPrompt() const;
     void setPrompt(const std::string& newPrompt);

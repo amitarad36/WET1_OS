@@ -199,6 +199,8 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastDir)
 	: BuiltInCommand(cmd_line), lastWorkingDir(lastDir) {}
 ChangeDirCommand::~ChangeDirCommand() {}
 void ChangeDirCommand::execute() {
+	SmallShell& shell = SmallShell::getInstance();
+
 	// No arguments: Do nothing
 	if (cmdSegments.size() == 1) {
 		return;
@@ -211,19 +213,26 @@ void ChangeDirCommand::execute() {
 	}
 
 	const std::string& targetDir = cmdSegments[1];
+	char* currentDir = getcwd(nullptr, 0); // Get the current working directory
+	if (!currentDir) {
+		perror("smash error: getcwd failed");
+		return;
+	}
 
 	// Handle "cd -": Change to the last working directory
 	if (targetDir == "-") {
-		if (lastWorkingDir.empty()) {
+		if (shell.getLastWorkingDir().empty()) {
 			std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+			free(currentDir);
 			return;
 		}
-		if (chdir(lastWorkingDir.c_str()) == -1) {
+		if (chdir(shell.getLastWorkingDir().c_str()) == -1) {
 			perror("smash error: chdir failed");
 		}
 		else {
-			lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
+			shell.setLastWorkingDir(currentDir); // Update lastWorkingDir with the previous directory
 		}
+		free(currentDir);
 		return;
 	}
 
@@ -233,8 +242,9 @@ void ChangeDirCommand::execute() {
 			perror("smash error: chdir failed");
 		}
 		else {
-			lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
+			shell.setLastWorkingDir(currentDir); // Update lastWorkingDir
 		}
+		free(currentDir);
 		return;
 	}
 
@@ -243,8 +253,9 @@ void ChangeDirCommand::execute() {
 		perror("smash error: chdir failed");
 	}
 	else {
-		lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
+		shell.setLastWorkingDir(currentDir); // Update lastWorkingDir
 	}
+	free(currentDir);
 }
 
 
@@ -734,6 +745,12 @@ void SmallShell::executeCommand(const char* cmd_line) {
 		cmd->execute();
 		delete cmd;
 	}
+}
+std::string SmallShell::getLastWorkingDir() const {
+	return lastWorkingDir;
+}
+void SmallShell::setLastWorkingDir(const std::string& dir) {
+	lastWorkingDir = dir;
 }
 std::string SmallShell::getPwd() const {
 	char cwd[COMMAND_MAX_LENGTH];
