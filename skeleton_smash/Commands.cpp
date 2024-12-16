@@ -9,8 +9,11 @@
 #include <stdexcept>
 #include <fcntl.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
-
+#ifndef S_ISDIR
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
 
 // Utility Functions
 std::string _trim(const std::string& str) {
@@ -67,6 +70,13 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 	}
 	args[i] = nullptr; // Null-terminate the argument list
 	return i;          // Return the number of arguments parsed
+}
+bool isDirectory(const std::string& path) {
+	struct stat statbuf;
+	if (stat(path.c_str(), &statbuf) != 0) {
+		return false;
+	}
+	return S_ISDIR(statbuf.st_mode);
 }
 
 
