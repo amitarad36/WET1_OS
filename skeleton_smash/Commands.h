@@ -24,29 +24,24 @@ class JobsList;
 
 class Command {
 protected:
-    std::vector<std::string> cmdSegments; // Parsed segments of the command
-    int processId; // Process ID of the command
-    bool isBackground; // Whether the command runs in the background
-    std::string cmdLine; // Original command line
-    std::string alias; // Alias for the command
-    std::string fileRedirect; // File redirection path
+    std::vector<std::string> cmdSegments;
+    int processId;
+    bool isBackground;
+    std::string cmdLine;
+    std::string alias;
+    std::string fileRedirect;
 
 public:
     Command(const char* cmd_line);
     virtual ~Command();
-
-    virtual void execute() = 0; // Pure virtual execute method
-
-    int getProcessId() const; // Get the process ID
-    void setProcessId(int pid); // Set the process ID
-
-    std::string getAlias() const; // Get the alias
-    void setAlias(const std::string& aliasCommand); // Set the alias
-
-    std::string getPath() const; // Get the file redirection path
-    void setPath(const std::string& path); // Set the file redirection path
-
-    std::string getCommandLine() const; // Get the full command line
+    virtual void execute() = 0;
+    int getProcessId() const;
+    void setProcessId(int pid);
+    std::string getAlias() const;
+    void setAlias(const std::string& aliasCommand);
+    std::string getPath() const;
+    void setPath(const std::string& path);
+    std::string getCommandLine() const;
 };
 
 class BuiltInCommand : public Command {
@@ -58,7 +53,7 @@ public:
 class ExternalCommand : public Command {
 public:
     ExternalCommand(const char* cmd_line);
-    virtual ~ExternalCommand() {}
+    virtual ~ExternalCommand();
     void execute() override;
 };
 
@@ -73,7 +68,6 @@ public:
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-
 public:
     ChangeDirCommand(const char* cmd_line);
     ~ChangeDirCommand();
@@ -110,7 +104,7 @@ public:
 
 private:
     std::list<JobEntry*> jobs;
-    int lastJobId; // Tracks the last used job ID
+    int lastJobId;
 
 public:
     JobsList();
@@ -197,15 +191,14 @@ private:
 
 public:
     RedirectionCommand(const char* cmd_line);
+    ~RedirectionCommand();
     void execute() override;
 };
 
 class ListDirCommand : public BuiltInCommand {
 public:
     ListDirCommand(const char* cmd_line);
-
     virtual ~ListDirCommand() {}
-
     void execute() override;
 
 private:

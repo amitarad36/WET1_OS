@@ -139,7 +139,14 @@ BuiltInCommand::~BuiltInCommand() {}
 
 // ExternalCommand Class
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
-void ExternalCommand::execute()void ExternalCommand::execute() {
+ExternalCommand::~ExternalCommand() {
+	// Free dynamically allocated memory in cmdSegments
+	for (auto& segment : cmdSegments) {
+		free(const_cast<char*>(segment.c_str())); // Deallocate memory used for command arguments
+	}
+	cmdSegments.clear();
+}
+void ExternalCommand::execute() {
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
 		setpgrp();
@@ -645,6 +652,7 @@ RedirectionCommand::RedirectionCommand(const char* cmd_line)
 		fileRedirect.clear();
 	}
 }
+RedirectionCommand::~RedirectionCommand() {}
 void RedirectionCommand::execute() {
 	if (fileRedirect.empty()) {
 		std::cerr << "smash error: no file specified for redirection" << std::endl;
