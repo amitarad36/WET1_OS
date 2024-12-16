@@ -313,30 +313,23 @@ void JobsCommand::execute() {
 // KillCommand Class
 KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
 KillCommand::~KillCommand() {}
-void KillCommand::execute() {
-	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmdLine, args);
+void QuitCommand::execute() {
+	if (strstr(cmdLine.c_str(), "kill")) {
+		// Print the message about sending SIGKILL signals
+		std::cout << "smash: sending SIGKILL signal to " << jobsList->size() << " jobs:" << std::endl;
 
-	if (argc != 3 || args[1][0] != '-') {
-		std::cerr << "smash error: kill: invalid arguments" << std::endl;
-		return;
-	}
+		// Iterate through all jobs and print their details
+		for (auto& job : jobsList->getJobs()) {
+			std::cout << job->pid << ": " << job->command << std::endl;
+			if (kill(job->pid, SIGKILL) == -1) {
+				perror("smash error: kill failed");
+			}
+		}
 
-	int signal = atoi(args[1] + 1);
-	int jobId = atoi(args[2]);
-
-	JobsList::JobEntry* job = jobsList->getJobById(jobId);
-	if (!job) {
-		std::cerr << "smash error: kill: job-id " << jobId << " does not exist" << std::endl;
-		return;
+		// Clear the jobs list
+		jobsList->clear();
 	}
-
-	if (kill(job->pid, signal) == -1) {
-		perror("smash error: kill failed");
-	}
-	else {
-		std::cout << "signal number " << signal << " was sent to PID " << job->pid << std::endl;
-	}
+	exit(0);
 }
 
 
