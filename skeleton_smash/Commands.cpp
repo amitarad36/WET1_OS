@@ -365,7 +365,7 @@ void KillCommand::execute() {
 QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs)
 	: BuiltInCommand(cmd_line), jobsList(jobs) {}
 QuitCommand::~QuitCommand() {}
-void execute() {
+void QuitCommand::execute() {
 	JobsList& jobsList = SmallShell::getInstance().getJobsList();
 	if (strstr(cmdLine.c_str(), "kill")) {
 		std::cout << "smash: sending SIGKILL signal to " << jobsList.getJobs().size() << " jobs:" << std::endl;
