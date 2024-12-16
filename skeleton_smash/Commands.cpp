@@ -714,7 +714,7 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 		return new ShowPidCommand(cmd_line);
 	}
 	else if (firstWord == "cd") {
-		return new ChangeDirCommand(cmd_line, lastWorkingDir);
+		return new ChangeDirCommand(cmd_line);
 	}
 	else if (firstWord == "jobs") {
 		return new JobsCommand(cmd_line, &jobs);
