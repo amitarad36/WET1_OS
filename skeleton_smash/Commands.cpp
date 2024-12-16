@@ -7,6 +7,7 @@
 #include <string.h>
 #include <cstdlib>
 #include <stdexcept>
+#include <fcntl.h>
 
 
 // Utility Functions
@@ -446,6 +447,149 @@ void UnaliasCommand::execute() {
 	}
 }
 
+
+// RedirectionCommand Class
+RedirectionCommand::RedirectionCommand(const char* cmd_line)
+	: BuiltInCommand(cmd_line), m_isAppend(false) {
+	// Parse the command line for redirection
+	size_t redirectionPos = cmdLine.find('>');
+	if (redirectionPos != std::string::npos) {
+		m_isAppend = (cmdLine[redirectionPos + 1] == '>'); // Check if it's >>
+		size_t fileStart = m_isAppend ? redirectionPos + 2 : redirectionPos + 1;
+
+		// Trim and extract the file path
+		fileRedirect = _trim(cmdLine.substr(fileStart));
+
+		// Remove redirection and file path from the command
+		cmdLine = _trim(cmdLine.substr(0, redirectionPos));
+
+		// Update `cmdSegments` after removing redirection parts
+		cmdSegments.clear();
+		std::istringstream iss(cmdLine);
+		std::string segment;
+		while (iss >> segment) {
+			cmdSegments.push_back(segment);
+		}
+	}
+	else {
+		std::cerr << "smash error: invalid redirection syntax" << std::endl;
+		fileRedirect.clear();
+	}
+}
+void RedirectionCommand::execute() {
+	if (fileRedirect.empty()) {
+		std::cerr << "smash error: no file specified for redirection" << std::endl;
+		return;
+	}
+
+	int flags = O_WRONLY | O_CREAT | (m_isAppend ? O_APPEND : O_TRUNC);
+	int fd = open(fileRedirect.c_str(), flags, 0644);
+	if (fd == -1) {
+		perror("smash error: open failed");
+		return;
+	}
+
+	int stdoutBackup = dup(STDOUT_FILENO);
+	if (stdoutBackup == -1) {
+		perror("smash error: dup failed");
+		close(fd);
+		return;
+	}
+
+	if (dup2(fd, STDOUT_FILENO) == -1) {
+		perror("smash error: dup2 failed");
+		close(fd);
+		close(stdoutBackup);
+		return;
+	}
+	close(fd);
+
+	Command* cmd = SmallShell::getInstance().CreateCommand(cmdLine.c_str());
+	if (cmd) {
+		cmd->execute();
+		delete cmd;
+	}
+	else {
+		std::cerr << "smash error: failed to create command" << std::endl;
+	}
+
+	// Restore stdout
+	if (dup2(stdoutBackup, STDOUT_FILENO) == -1) {
+		perror("smash error: dup2 restore failed");
+	}
+	close(stdoutBackup);
+}
+
+
+// ListDirCommand Class
+ListDirCommand::ListDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+void ListDirCommand::listDirectoryRecursively(const std::string& path, const std::string& indent) const {
+	DIR* dir = opendir(path.c_str());
+	if (!dir) {
+		perror("smash error: opendir failed");
+		return;
+	}
+
+	std::vector<std::string> directories;
+	std::vector<std::string> files;
+
+	struct dirent* entry;
+	while ((entry = readdir(dir)) != nullptr) {
+		std::string name = entry->d_name;
+
+		// Skip current and parent directory symbols
+		if (name == "." || name == "..") {
+			continue;
+		}
+
+		std::string fullPath = path + "/" + name;
+
+		if (isDirectory(fullPath)) {
+			directories.push_back(name);
+		}
+		else {
+			files.push_back(name);
+		}
+	}
+	closedir(dir);
+
+	// Sort directories and files alphabetically
+	std::sort(directories.begin(), directories.end());
+	std::sort(files.begin(), files.end());
+
+	// Print directories
+	for (const auto& dirName : directories) {
+		std::cout << indent << dirName << "/" << std::endl;
+		listDirectoryRecursively(path + "/" + dirName, indent + "\t");
+	}
+
+	// Print files
+	for (const auto& fileName : files) {
+		std::cout << indent << fileName << std::endl;
+	}
+}
+void ListDirCommand::execute() {
+	if (cmd_segments.size() > 2) {
+		std::cerr << "smash error: listdir: too many arguments" << std::endl;
+		return;
+	}
+
+	std::string directoryPath = (cmd_segments.size() == 1)
+		? SmallShell::getInstance().getPWD()
+		: cmd_segments[1];
+
+	// Remove trailing background sign '&'
+	_removeBackgroundSignTemp(directoryPath);
+
+	if (!isDirectory(directoryPath)) {
+		perror("smash error: listdir");
+		return;
+	}
+
+	listDirectoryRecursively(directoryPath);
+}
+
+
 // SmallShell Class
 SmallShell::SmallShell()
 	: prompt("smash"), lastWorkingDir(""), foregroundPid(-1), foregroundCommand("") {}
@@ -457,8 +601,12 @@ SmallShell& SmallShell::getInstance() {
 Command* SmallShell::createCommand(const char* cmd_line) {
 	std::string cmd_s = _trim(std::string(cmd_line));
 	std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
+	std::string cmd(cmd_line);
 
-	if (firstWord == "chprompt") {
+	if (cmd.find('>') != std::string::npos) {
+		return new RedirectionCommand(cmd_line);
+	}
+	else if (firstWord == "chprompt") {
 		return new ChangePromptCommand(cmd_line, prompt);
 	}
 	else if (firstWord == "pwd") {
@@ -481,6 +629,10 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	}
 	else if (firstWord == "fg") {
 		return new ForegroundCommand(cmd_line, &jobs);
+	}
+	else if (firstWord.compare("listdir") == 0)
+	{
+		return new ListDirCommand(cmd_line);
 	}
 	else if (firstWord == "bg") {
 		return new BackgroundCommand(cmd_line, &jobs);

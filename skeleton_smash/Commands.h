@@ -7,7 +7,6 @@
 #include <map>
 
 // constants
-constexpr int MAX_SIZE = 256;
 constexpr int COMMAND_MAX_LENGTH = 200;
 constexpr int COMMAND_MAX_ARGS = 20;
 
@@ -183,6 +182,27 @@ public:
     UnaliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap);
     ~UnaliasCommand();
     void execute() override;
+};
+
+class RedirectionCommand : public BuiltInCommand {
+private:
+    bool m_isAppend;
+
+public:
+    RedirectionCommand(const char* cmd_line);
+    void execute() override;
+};
+
+class ListDirCommand : public BuiltInCommand {
+public:
+    ListDirCommand(const char* cmd_line);
+
+    virtual ~ListDirCommand() {}
+
+    void execute() override;
+
+private:
+    void listDirectoryRecursively(const std::string& path, const std::string& indent = "") const;
 };
 
 class SmallShell {
