@@ -199,20 +199,54 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastDir)
 	: BuiltInCommand(cmd_line), lastWorkingDir(lastDir) {}
 ChangeDirCommand::~ChangeDirCommand() {}
 void ChangeDirCommand::execute() {
-	if (cmdSegments.size() == 1)
+	// No arguments: Do nothing
+	if (cmdSegments.size() == 1) {
 		return;
+	}
+
+	// Too many arguments: Print error and return
 	if (cmdSegments.size() > 2) {
 		std::cerr << "smash error: cd: too many arguments" << std::endl;
 		return;
 	}
+
 	const std::string& targetDir = cmdSegments[1];
+
+	// Handle "cd -": Change to the last working directory
+	if (targetDir == "-") {
+		if (lastWorkingDir.empty()) {
+			std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
+			return;
+		}
+		if (chdir(lastWorkingDir.c_str()) == -1) {
+			perror("smash error: chdir failed");
+		}
+		else {
+			lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
+		}
+		return;
+	}
+
+	// Handle "cd ..": Move up one directory
+	if (targetDir == "..") {
+		if (chdir("..") == -1) {
+			perror("smash error: chdir failed");
+		}
+		else {
+			lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
+		}
+		return;
+	}
+
+	// Handle regular path: Change directory
 	if (chdir(targetDir.c_str()) == -1) {
 		perror("smash error: chdir failed");
 	}
 	else {
-		lastWorkingDir = getcwd(nullptr, 0);
+		lastWorkingDir = getcwd(nullptr, 0); // Update lastWorkingDir to current dir
 	}
 }
+
 
 
 // ShowPidCommand Class
