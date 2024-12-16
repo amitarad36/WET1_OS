@@ -139,7 +139,7 @@ BuiltInCommand::~BuiltInCommand() {}
 
 // ExternalCommand Class
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
-void ExternalCommand::execute() {
+void ExternalCommand::execute()void ExternalCommand::execute() {
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
 		setpgrp();
@@ -771,61 +771,63 @@ SmallShell& SmallShell::getInstance() {
 Command* SmallShell::createCommand(const char* cmd_line) {
 	std::string cmd_s = _trim(std::string(cmd_line));
 	std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
-	std::string cmd(cmd_line);
+	std::string expandedCommand = cmd_s;
 
 	// Handle alias expansion
 	if (aliasMap.count(firstWord)) {
-		std::string expandedCommand = aliasMap[firstWord];
-		// Replace the alias with its corresponding command
-		cmd_s = expandedCommand + cmd_s.substr(firstWord.length());
-		cmd = cmd_s; // Update the command to include expanded alias
-		firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
+		expandedCommand = _trim(aliasMap[firstWord]);
+		expandedCommand += cmd_s.substr(firstWord.length()); // Append remaining arguments
+		cmd_s = expandedCommand;
 	}
 
+	// Re-parse the expanded command line to get the first word
+	std::istringstream iss(cmd_s);
+	iss >> firstWord;
+
 	// Redirection command
-	if (cmd.find('>') != std::string::npos) {
-		return new RedirectionCommand(cmd_line);
+	if (cmd_s.find('>') != std::string::npos) {
+		return new RedirectionCommand(cmd_s.c_str());
 	}
 	// Built-in commands
 	else if (firstWord == "chprompt") {
-		return new ChangePromptCommand(cmd_line, prompt);
+		return new ChangePromptCommand(cmd_s.c_str(), prompt);
 	}
 	else if (firstWord == "pwd") {
-		return new GetCurrDirCommand(cmd_line);
+		return new GetCurrDirCommand(cmd_s.c_str());
 	}
 	else if (firstWord == "showpid") {
-		return new ShowPidCommand(cmd_line);
+		return new ShowPidCommand(cmd_s.c_str());
 	}
 	else if (firstWord == "cd") {
-		return new ChangeDirCommand(cmd_line);
+		return new ChangeDirCommand(cmd_s.c_str());
 	}
 	else if (firstWord == "jobs") {
-		return new JobsCommand(cmd_line, &jobs);
+		return new JobsCommand(cmd_s.c_str(), &jobs);
 	}
 	else if (firstWord == "kill") {
-		return new KillCommand(cmd_line, &jobs);
+		return new KillCommand(cmd_s.c_str(), &jobs);
 	}
 	else if (firstWord == "quit") {
-		return new QuitCommand(cmd_line, &jobs);
+		return new QuitCommand(cmd_s.c_str(), &jobs);
 	}
 	else if (firstWord == "fg") {
-		return new ForegroundCommand(cmd_line, &jobs);
+		return new ForegroundCommand(cmd_s.c_str(), &jobs);
 	}
 	else if (firstWord == "listdir") {
-		return new ListDirCommand(cmd_line);
+		return new ListDirCommand(cmd_s.c_str());
 	}
 	else if (firstWord == "bg") {
-		return new BackgroundCommand(cmd_line, &jobs);
+		return new BackgroundCommand(cmd_s.c_str(), &jobs);
 	}
 	else if (firstWord == "alias") {
-		return new AliasCommand(cmd_line, aliasMap);
+		return new AliasCommand(cmd_s.c_str(), aliasMap);
 	}
 	else if (firstWord == "unalias") {
-		return new UnaliasCommand(cmd_line, aliasMap);
+		return new UnaliasCommand(cmd_s.c_str(), aliasMap);
 	}
 	// External commands
 	else {
-		return new ExternalCommand(cmd_line);
+		return new ExternalCommand(cmd_s.c_str());
 	}
 }
 void SmallShell::executeCommand(const char* cmd_line) {
