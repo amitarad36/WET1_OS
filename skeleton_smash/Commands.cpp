@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <algorithm>
+
 
 #ifndef S_ISDIR
 #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
