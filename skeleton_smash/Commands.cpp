@@ -199,7 +199,7 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastDir)
 	: BuiltInCommand(cmd_line), lastWorkingDir(lastDir) {}
 ChangeDirCommand::~ChangeDirCommand() {}
 void ChangeDirCommand::execute() {
-	if (cmdSegments.size() != 2) {
+	if (cmdSegments.size() > 2) {
 		std::cerr << "smash error: cd: too many arguments" << std::endl;
 		return;
 	}
