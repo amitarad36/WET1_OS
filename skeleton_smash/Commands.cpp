@@ -91,19 +91,8 @@ void _trimAmp(std::string& cmd_line) {
 
 
 // Command Class
-Command::Command(const char* cmd_line) : cmdLine(cmd_line), processId(-1), isBackground(false) {
-	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmd_line, args);
-
-	for (int i = 0; i < argc; ++i) {
-		cmdSegments.push_back(args[i]);
-		free(args[i]); // Free the dynamically allocated memory
-	}
-
-	if (!cmdSegments.empty() && cmdSegments.back() == "&") {
-		isBackground = true;
-		cmdSegments.pop_back(); // Remove the `&` from the segments
-	}
+Command::Command(const char* cmd_line)
+	: cmdSegments(), processId(-1), isBackground(false), cmdLine(cmd_line) {
 }
 Command::~Command() {}
 int Command::getProcessId() const { return processId; }
