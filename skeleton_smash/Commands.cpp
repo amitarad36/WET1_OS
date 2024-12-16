@@ -11,6 +11,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <algorithm>
+#include <regex>
 
 
 #ifndef S_ISDIR
@@ -527,29 +528,46 @@ AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::stri
 	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
 AliasCommand::~AliasCommand() {}
 void AliasCommand::execute() {
-	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmdLine, args);
+	std::regex aliasRegex("^alias ([a-zA-Z0-9_]+)='([^']*)'$");
+	std::smatch match;
 
-	if (argc != 3) {
-		std::cerr << "smash error: alias: invalid arguments" << std::endl;
+	// If no arguments provided, list all aliases
+	if (cmdSegments.size() == 1) {
+		for (const auto& alias : aliasMap) {
+			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
+		}
 		return;
 	}
 
-	std::string aliasName = args[1];
-	std::string aliasCommand = args[2];
+	// Join the command line arguments into a single string
+	std::string aliasInput = cmdLine.substr(6); // Skip "alias " prefix
 
-	// Prevent alias loops
-	if (aliasCommand == aliasName) {
-		std::cerr << "smash error: alias: alias loop detected" << std::endl;
+	// Validate the alias input using regex
+	if (!std::regex_match(aliasInput, match, aliasRegex)) {
+		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
+	// Extract the alias name and command
+	std::string aliasName = match[1];
+	std::string aliasCommand = match[2];
+
+	// Reserved keywords to avoid conflicts
+	static const std::set<std::string> reservedKeywords = {
+		"quit", "fg", "bg", "jobs", "kill", "cd", "listdir", "chprompt", "alias", "unalias", "pwd", "showpid"
+	};
+
+	// Check for reserved keyword or existing alias conflict
+	if (reservedKeywords.count(aliasName) || aliasMap.count(aliasName)) {
+		std::cerr << "smash error: alias: " << aliasName << " already exists or is a reserved command" << std::endl;
+		return;
+	}
+
+	// Add or update the alias in the map
 	aliasMap[aliasName] = aliasCommand;
-	std::cout << "Alias added: " << aliasName << " -> " << aliasCommand << std::endl;
 
-	for (int i = 0; i < argc; ++i) {
-		free(args[i]);
-	}
+	// Print success message
+	std::cout << "Alias added: " << aliasName << "='" << aliasCommand << "'" << std::endl;
 }
 
 // UnaliasCommand Class
