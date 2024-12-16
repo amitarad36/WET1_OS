@@ -106,7 +106,6 @@ void ExternalCommand::execute() {
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
 			shell.getJobsList().addJob(getCommandLine(), pid, false);
-			std::cout << "Background job started with PID: " << pid << std::endl;
 		}
 		else {
 			shell.setForegroundJob(pid, getCommandLine());
