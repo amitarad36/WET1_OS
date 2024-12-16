@@ -104,8 +104,6 @@ Command::Command(const char* cmd_line) : cmdLine(cmd_line), processId(-1), isBac
 		cmdSegments.pop_back(); // Remove the `&` from the segments
 	}
 }
-
-
 Command::~Command() {}
 int Command::getProcessId() const { return processId; }
 void Command::setProcessId(int pid) { processId = pid; }
@@ -434,24 +432,66 @@ void ForegroundCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
 	int argc = _parseCommandLine(cmdLine, args);
 
-	if (argc != 2) {
+	JobsList::JobEntry* job = nullptr;
+
+	// Case 1: No arguments provided
+	if (argc == 1) {
+		// Get the job with the highest job ID
+		job = jobsList->getJobById(jobsList->size());
+		if (!job) {
+			std::cerr << "smash error: fg: jobs list is empty" << std::endl;
+			return;
+		}
+	}
+	// Case 2: One argument provided
+	else if (argc == 2) {
+		int jobId = atoi(args[1]);
+		if (jobId <= 0) {
+			std::cerr << "smash error: fg: invalid arguments" << std::endl;
+			return;
+		}
+
+		// Try to find the job with the given job ID
+		job = jobsList->getJobById(jobId);
+		if (!job) {
+			std::cerr << "smash error: fg: job-id " << jobId << " does not exist" << std::endl;
+			return;
+		}
+	}
+	// Case 3: Invalid number of arguments
+	else {
 		std::cerr << "smash error: fg: invalid arguments" << std::endl;
 		return;
 	}
 
-	int jobId = atoi(args[1]);
-	JobsList::JobEntry* job = jobsList->getJobById(jobId);
-	if (!job) {
-		std::cerr << "smash error: fg: job-id " << jobId << " does not exist" << std::endl;
-		return;
-	}
+	// Print the job's command and PID
+	std::cout << job->command << " " << job->pid << std::endl;
 
+	// Send SIGCONT to the job to resume it if stopped
 	if (kill(job->pid, SIGCONT) == -1) {
 		perror("smash error: fg failed");
 		return;
 	}
 
-	waitpid(job->pid, nullptr, 0);
+	// Set the job as the foreground job in the shell
+	SmallShell& shell = SmallShell::getInstance();
+	shell.setForegroundJob(job->pid, job->command);
+
+	// Wait for the job to finish
+	if (waitpid(job->pid, nullptr, WUNTRACED) == -1) {
+		perror("smash error: waitpid failed");
+	}
+
+	// Clear the foreground job in the shell
+	shell.clearForegroundJob();
+
+	// Remove the job from the jobs list after bringing it to the foreground
+	jobsList->removeJobById(job->jobId);
+
+	// Free allocated memory
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
+	}
 }
 
 // BackgroundCommand Class
