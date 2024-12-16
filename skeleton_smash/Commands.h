@@ -208,7 +208,7 @@ public:
     void clearForegroundJob();
     int getForegroundPid() const;
     std::string getForegroundCommand() const;
-    const JobsList& getJobsList() const;
+    JobsList& getJobsList();
     void setAlias(const std::string& aliasName, const std::string& aliasCommand);
     void removeAlias(const std::string& aliasName);
     std::string getAlias(const std::string& aliasName) const;

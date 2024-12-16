@@ -474,7 +474,7 @@ std::string SmallShell::getPrompt() const {
 void SmallShell::setPrompt(const std::string& newPrompt) {
 	prompt = newPrompt;
 }
-const JobsList& SmallShell::getJobsList() const {
+JobsList& SmallShell::getJobsList() {
 	return jobs;
 }
 void SmallShell::updateWorkingDirectory(const std::string& newDir) {
