@@ -91,7 +91,7 @@ BuiltInCommand::~BuiltInCommand() {}
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
 void ExternalCommand::execute() {
 	pid_t pid = fork();
-	if (pid == 0) {
+	if (pid == 0) { // Child process
 		setpgrp();
 		char* args[COMMAND_MAX_ARGS];
 		for (size_t i = 0; i < cmdSegments.size(); ++i) {
@@ -102,10 +102,16 @@ void ExternalCommand::execute() {
 		perror("smash error: execvp failed");
 		exit(1);
 	}
-	else if (pid > 0) {
-		setProcessId(pid);
-		if (!isBackground) {
+	else if (pid > 0) { // Parent process
+		SmallShell& shell = SmallShell::getInstance();
+		if (isBackground) {
+			shell.getJobsList().addJob(getCommandLine(), pid, false);
+			std::cout << "Background job started with PID: " << pid << std::endl;
+		}
+		else {
+			shell.setForegroundJob(pid, getCommandLine());
 			waitpid(pid, nullptr, 0);
+			shell.clearForegroundJob();
 		}
 	}
 	else {
@@ -180,26 +186,34 @@ void GetCurrDirCommand::execute() {
 
 
 // JobsList Class
-JobsList::JobsList() {}
+JobsList::JobsList() : lastJobId(0) {}
 JobsList::~JobsList() {
-	for (JobEntry* job : jobs) delete job;
+	for (auto job : jobs) {
+		delete job;
+	}
 }
-void JobsList::addJob(Command* cmd, int pid, bool isStopped) {
-	removeFinishedJobs();
-	int jobId = jobs.empty() ? 1 : jobs.back()->jobId + 1;
-	jobs.push_back(new JobEntry(jobId, pid, cmd->getCommandLine(), isStopped));
+void JobsList::addJob(const std::string& command, int pid, bool isStopped) {
+	removeFinishedJobs(); // Clean up finished jobs
+	int jobId = ++lastJobId;
+	jobs.push_back(new JobEntry(jobId, pid, command, isStopped));
 }
 void JobsList::printJobs() const {
-	for (const JobEntry* job : jobs) {
+	for (const auto& job : jobs) {
 		std::cout << "[" << job->jobId << "] " << job->command
 			<< (job->isStopped ? " (stopped)" : "") << std::endl;
 	}
 }
 void JobsList::removeFinishedJobs() {
-	jobs.remove_if([](JobEntry* job) {
+	for (auto it = jobs.begin(); it != jobs.end();) {
 		int status;
-		return waitpid(job->pid, &status, WNOHANG) > 0;
-		});
+		if (waitpid((*it)->pid, &status, WNOHANG) > 0) {
+			delete* it;
+			it = jobs.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }
 JobsList::JobEntry* JobsList::getJobById(int jobId) {
 	for (auto& job : jobs) {
@@ -241,10 +255,7 @@ void JobsCommand::execute() {
 		return;
 	}
 
-	// Ensure jobs list is updated by removing completed jobs
 	m_jobsList->removeFinishedJobs();
-
-	// Print the current jobs list
 	m_jobsList->printJobs();
 }
 

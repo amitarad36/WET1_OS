@@ -100,18 +100,18 @@ public:
         std::string command;
 
         JobEntry(int jobId, int pid, const std::string& command, bool isStopped)
-            : jobId(jobId), pid(pid), command(command), isStopped(isStopped) {}
+            : jobId(jobId), pid(pid), isStopped(isStopped), command(command) {}
         ~JobEntry() {}
-
     };
 
 private:
     std::list<JobEntry*> jobs;
+    int lastJobId; // Tracks the last used job ID
 
 public:
     JobsList();
     ~JobsList();
-    void addJob(Command* cmd, int pid, bool isStopped = false);
+    void addJob(const std::string& command, int pid, bool isStopped = false);
     void printJobs() const;
     void removeFinishedJobs();
     JobEntry* getJobById(int jobId);
