@@ -528,10 +528,10 @@ AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::stri
 	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
 AliasCommand::~AliasCommand() {}
 void AliasCommand::execute() {
-	std::regex aliasRegex("^alias ([a-zA-Z0-9_]+)='([^']*)'$");
-	std::smatch match;
+	// Trim the input command
+	std::string commandLine = _trim(cmdLine);
 
-	// If no arguments provided, list all aliases
+	// Check if the command is just "alias" (list all aliases)
 	if (cmdSegments.size() == 1) {
 		for (const auto& alias : aliasMap) {
 			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
@@ -539,18 +539,37 @@ void AliasCommand::execute() {
 		return;
 	}
 
-	// Join the command line arguments into a single string
-	std::string aliasInput = cmdLine.substr(6); // Skip "alias " prefix
-
-	// Validate the alias input using regex
-	if (!std::regex_match(aliasInput, match, aliasRegex)) {
+	// Ensure the command starts with "alias "
+	if (commandLine.substr(0, 6) != "alias ") {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Extract the alias name and command
-	std::string aliasName = match[1];
-	std::string aliasCommand = match[2];
+	// Find the '=' sign to separate alias name and command
+	size_t equalPos = commandLine.find('=');
+	if (equalPos == std::string::npos || equalPos < 6) { // No '=' or missing alias name
+		std::cerr << "smash error: alias: invalid alias format" << std::endl;
+		return;
+	}
+
+	// Extract alias name and command
+	std::string aliasName = _trim(commandLine.substr(6, equalPos - 6));
+	std::string aliasCommand = _trim(commandLine.substr(equalPos + 1));
+
+	// Validate alias name (letters, numbers, underscores only)
+	if (!std::regex_match(aliasName, std::regex("^[a-zA-Z0-9_]+$"))) {
+		std::cerr << "smash error: alias: invalid alias format" << std::endl;
+		return;
+	}
+
+	// Check for valid command format: starts and ends with single quotes
+	if (aliasCommand.length() < 2 || aliasCommand.front() != '\'' || aliasCommand.back() != '\'') {
+		std::cerr << "smash error: alias: invalid alias format" << std::endl;
+		return;
+	}
+
+	// Remove surrounding quotes from alias command
+	aliasCommand = aliasCommand.substr(1, aliasCommand.length() - 2);
 
 	// Reserved keywords to avoid conflicts
 	static const std::set<std::string> reservedKeywords = {
