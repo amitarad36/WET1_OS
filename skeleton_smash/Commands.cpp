@@ -411,18 +411,14 @@ QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs)
 QuitCommand::~QuitCommand() {}
 void QuitCommand::execute() {
 	JobsList& jobsList = SmallShell::getInstance().getJobsList();
+
 	if (strstr(cmdLine.c_str(), "kill")) {
 		std::cout << "smash: sending SIGKILL signal to " << jobsList.getJobs().size() << " jobs:" << std::endl;
-		for (const auto& job : jobsList.getJobs()) {
-			std::cout << job->pid << ": " << job->command << std::endl;
-			if (kill(job->pid, SIGKILL) == -1) {
-				perror("smash error: kill failed");
-			}
-		}
-		jobsList.killAllJobs(); // Clear jobs after killing them
+		jobsList.killAllJobs();
 	}
 	exit(0);
 }
+
 
 // ForegroundCommand Class
 ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
