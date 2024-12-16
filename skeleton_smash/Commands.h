@@ -111,6 +111,7 @@ private:
 public:
     JobsList();
     ~JobsList();
+    int size() const;
     void addJob(const std::string& command, int pid, bool isStopped = false);
     void printJobs() const;
     void removeFinishedJobs();

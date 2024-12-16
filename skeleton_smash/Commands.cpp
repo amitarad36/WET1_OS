@@ -242,6 +242,9 @@ JobsList::~JobsList() {
 		delete job;
 	}
 }
+int JobsList::size() const {
+	return jobs.size();
+}
 void JobsList::addJob(const std::string& command, int pid, bool isStopped) {
 	removeFinishedJobs(); // Clean up finished jobs
 	int jobId = ++lastJobId;
