@@ -257,7 +257,6 @@ void ChangeDirCommand::execute() {
 }
 
 
-
 // ShowPidCommand Class
 ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
 ShowPidCommand::~ShowPidCommand() {}
@@ -853,4 +852,3 @@ void SmallShell::printAliases() const {
 		std::cout << alias.first << " -> " << alias.second << std::endl;
 	}
 }
-

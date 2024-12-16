@@ -1,19 +1,23 @@
 #ifndef SMASH_COMMANDS_H_
 #define SMASH_COMMANDS_H_
 
+
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
 
+
 // constants
 constexpr int COMMAND_MAX_LENGTH = 200;
 constexpr int COMMAND_MAX_ARGS = 20;
+
 
 std::string _trim(const std::string& str);
 int _parseCommandLine(const std::string& cmd_line, char** args);
 bool isDirectory(const std::string& path);
 void _trimAmp(std::string& cmd_line);
+
 
 class JobsList;
 
