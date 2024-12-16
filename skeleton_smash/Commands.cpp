@@ -365,26 +365,20 @@ void KillCommand::execute() {
 QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs)
 	: BuiltInCommand(cmd_line), jobsList(jobs) {}
 QuitCommand::~QuitCommand() {}
-class QuitCommand : public BuiltInCommand {
-public:
-	QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
-	~QuitCommand() {}
-	void execute() override {
-		JobsList& jobsList = SmallShell::getInstance().getJobsList();
-		if (strstr(cmdLine.c_str(), "kill")) {
-			std::cout << "smash: sending SIGKILL signal to " << jobsList.getJobs().size() << " jobs:" << std::endl;
-			for (const auto& job : jobsList.getJobs()) {
-				std::cout << job->pid << ": " << job->command << std::endl;
-				if (kill(job->pid, SIGKILL) == -1) {
-					perror("smash error: kill failed");
-				}
+void execute() {
+	JobsList& jobsList = SmallShell::getInstance().getJobsList();
+	if (strstr(cmdLine.c_str(), "kill")) {
+		std::cout << "smash: sending SIGKILL signal to " << jobsList.getJobs().size() << " jobs:" << std::endl;
+		for (const auto& job : jobsList.getJobs()) {
+			std::cout << job->pid << ": " << job->command << std::endl;
+			if (kill(job->pid, SIGKILL) == -1) {
+				perror("smash error: kill failed");
 			}
-			jobsList.killAllJobs(); // Clear jobs after killing them
 		}
-		exit(0);
+		jobsList.killAllJobs(); // Clear jobs after killing them
 	}
-};
-
+	exit(0);
+}
 
 // ForegroundCommand Class
 ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
