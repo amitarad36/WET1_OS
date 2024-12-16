@@ -195,8 +195,8 @@ void ChangePromptCommand::execute() {
 
 
 // ChangeDirCommand Class
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line, std::string& lastDir)
-	: BuiltInCommand(cmd_line), lastWorkingDir(lastDir) {}
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line)
+	: BuiltInCommand(cmd_line) {}
 ChangeDirCommand::~ChangeDirCommand() {}
 void ChangeDirCommand::execute() {
 	SmallShell& shell = SmallShell::getInstance();

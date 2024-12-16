@@ -70,7 +70,7 @@ public:
 class ChangeDirCommand : public BuiltInCommand {
 
 public:
-    ChangeDirCommand(const char* cmd_line, std::string& lastDir);
+    ChangeDirCommand(const char* cmd_line);
     ~ChangeDirCommand();
     void execute() override;
 };
