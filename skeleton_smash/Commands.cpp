@@ -25,13 +25,37 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 	int i = 0;
 	std::istringstream iss(_trim(cmd_line)); // Use _trim to clean input
 	for (std::string token; iss >> token;) {
-		args[i] = (char*)malloc(token.length() + 1); // Allocate memory for each token
-		if (!args[i]) {
-			perror("smash error: malloc failed");
-			exit(1);
+		// Check if the token ends with '&'
+		if (token.back() == '&' && token.length() > 1) {
+			// Separate the `&` from the token
+			token.pop_back(); // Remove '&' from the token
+			args[i] = (char*)malloc(token.length() + 1); // Allocate memory
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			strcpy(args[i], token.c_str());
+			++i;
+
+			// Add `&` as a separate argument
+			args[i] = (char*)malloc(2); // Allocate memory for "&"
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			strcpy(args[i], "&");
+			++i;
 		}
-		strcpy(args[i], token.c_str()); // Copy token into allocated memory
-		++i;
+		else {
+			// Normal token handling
+			args[i] = (char*)malloc(token.length() + 1); // Allocate memory
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			strcpy(args[i], token.c_str());
+			++i;
+		}
 
 		if (i >= COMMAND_MAX_ARGS) {
 			std::cerr << "smash error: too many arguments" << std::endl;
@@ -45,15 +69,20 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 
 // Command Class
 Command::Command(const char* cmd_line) : cmdLine(cmd_line), processId(-1), isBackground(false) {
-	std::istringstream iss(_trim(cmd_line));
-	for (std::string token; iss >> token;) {
-		cmdSegments.push_back(token);
+	char* args[COMMAND_MAX_ARGS];
+	int argc = _parseCommandLine(cmd_line, args);
+
+	for (int i = 0; i < argc; ++i) {
+		cmdSegments.push_back(args[i]);
+		free(args[i]); // Free the dynamically allocated memory
 	}
+
 	if (!cmdSegments.empty() && cmdSegments.back() == "&") {
 		isBackground = true;
-		cmdSegments.pop_back();
+		cmdSegments.pop_back(); // Remove the `&` from the segments
 	}
 }
+
 
 Command::~Command() {}
 int Command::getProcessId() const { return processId; }
