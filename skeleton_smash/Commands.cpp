@@ -130,9 +130,11 @@ ExternalCommand::~ExternalCommand() {
 }
 void ExternalCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmdLine, args); // Parse arguments
+	int argc = _parseCommandLine(cmdLine, args);
 
-	if (argc == 0) return; // No command to execute
+	if (argc == 0) {
+		return; // No command to execute
+	}
 
 	// Check for background execution
 	bool isBackground = false;
@@ -140,27 +142,28 @@ void ExternalCommand::execute() {
 		isBackground = true;
 		free(args[argc - 1]); // Remove '&' from args
 		args[argc - 1] = nullptr;
-		argc--; // Decrease argument count
 	}
 
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		// Detach background jobs by creating a new process group
 		if (isBackground) {
-			setpgrp();
+			setpgrp(); // Detach background job from the shell's process group
 		}
 		execvp(args[0], args); // Execute external command
-		perror("smash error: execvp failed");
+		perror("smash error: execvp failed"); // If execvp fails
 		exit(1);
 	}
 	else if (pid > 0) { // Parent process
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
+			std::cout << "smash: background job started with pid " << pid << std::endl;
 			shell.getJobsList().addJob(getCommandLine(), pid, false);
 		}
-		else { // Foreground job
+		else {
 			shell.setForegroundJob(pid, getCommandLine());
-			waitpid(pid, nullptr, WUNTRACED); // Wait for foreground job
+			if (waitpid(pid, nullptr, WUNTRACED) == -1) {
+				perror("smash error: waitpid failed");
+			}
 			shell.clearForegroundJob();
 		}
 	}
@@ -168,7 +171,7 @@ void ExternalCommand::execute() {
 		perror("smash error: fork failed");
 	}
 
-	// Free allocated memory
+	// Free dynamically allocated arguments
 	for (int i = 0; i < argc; ++i) {
 		free(args[i]);
 	}
@@ -728,7 +731,9 @@ void ListDirCommand::execute() {
 
 // SmallShell Class
 SmallShell::SmallShell()
-	: prompt("smash"), lastWorkingDir(""), foregroundPid(-1), foregroundCommand("") {}
+	: prompt("smash"), lastWorkingDir(""), foregroundPid(-1), foregroundCommand("") {
+	setupSignals();
+}
 SmallShell::~SmallShell() {}
 SmallShell& SmallShell::getInstance() {
 	static SmallShell instance;
