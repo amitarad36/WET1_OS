@@ -759,24 +759,27 @@ SmallShell& SmallShell::getInstance() {
 Command* SmallShell::createCommand(const char* cmd_line) {
 	std::string cmd_s = _trim(std::string(cmd_line));
 	std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
-	std::string expandedCommand = cmd_s;
 
 	// Handle alias expansion
 	if (aliasMap.count(firstWord)) {
-		expandedCommand = _trim(aliasMap[firstWord]);
-		expandedCommand += cmd_s.substr(firstWord.length()); // Append remaining arguments
-		cmd_s = expandedCommand;
+		std::string expandedCommand = aliasMap[firstWord];
+		size_t firstWordLength = firstWord.length();
+
+		// Replace alias with its corresponding command and append the rest of the input
+		expandedCommand += cmd_s.substr(firstWordLength);
+
+		// Re-assign the full command line
+		cmd_s = _trim(expandedCommand);
 	}
 
 	// Re-parse the expanded command line to get the first word
 	std::istringstream iss(cmd_s);
 	iss >> firstWord;
 
-	// Redirection command
+	// Built-in or external command determination
 	if (cmd_s.find('>') != std::string::npos) {
 		return new RedirectionCommand(cmd_s.c_str());
 	}
-	// Built-in commands
 	else if (firstWord == "chprompt") {
 		return new ChangePromptCommand(cmd_s.c_str(), prompt);
 	}
@@ -801,9 +804,6 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	else if (firstWord == "fg") {
 		return new ForegroundCommand(cmd_s.c_str(), &jobs);
 	}
-	else if (firstWord == "listdir") {
-		return new ListDirCommand(cmd_s.c_str());
-	}
 	else if (firstWord == "bg") {
 		return new BackgroundCommand(cmd_s.c_str(), &jobs);
 	}
@@ -813,8 +813,8 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	else if (firstWord == "unalias") {
 		return new UnaliasCommand(cmd_s.c_str(), aliasMap);
 	}
-	// External commands
 	else {
+		// Treat it as an external command
 		return new ExternalCommand(cmd_s.c_str());
 	}
 }
