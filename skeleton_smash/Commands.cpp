@@ -524,38 +524,45 @@ AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::stri
 	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
 AliasCommand::~AliasCommand() {}
 void AliasCommand::execute() {
+	// Trim the command line to handle any spaces
 	std::string commandLine = _trim(cmdLine);
 
-	// If command is exactly "alias", list all aliases
+	// Case 1: If the command is exactly "alias" with no arguments
 	if (commandLine == "alias") {
+		// Print all aliases in the map
 		for (const auto& alias : aliasMap) {
 			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
 		}
-		return;
+		return; // Exit after printing
 	}
 
-	// Proceed with alias creation logic
+	// Case 2: Handle alias creation (alias <name>='<command>')
 	size_t equalPos = commandLine.find('=');
-	if (equalPos == std::string::npos || equalPos < 6) { // No '=' or missing alias name
+	if (equalPos == std::string::npos || equalPos < 6) { // Missing '=' or alias name
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
+	// Extract the alias name and command
 	std::string aliasName = _trim(commandLine.substr(6, equalPos - 6));
 	std::string aliasCommand = _trim(commandLine.substr(equalPos + 1));
 
-	// Validate alias name and format
+	// Validate alias name format
 	if (!std::regex_match(aliasName, std::regex("^[a-zA-Z0-9_]+$"))) {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
+	// Check for proper quotes around the alias command
 	if (aliasCommand.length() < 2 || aliasCommand.front() != '\'' || aliasCommand.back() != '\'') {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Check for conflicts
+	// Remove surrounding quotes from the command
+	aliasCommand = aliasCommand.substr(1, aliasCommand.length() - 2);
+
+	// Check for reserved keywords
 	static const std::set<std::string> reservedKeywords = {
 		"quit", "fg", "bg", "jobs", "kill", "cd", "listdir", "chprompt", "alias", "unalias", "pwd", "showpid"
 	};
@@ -565,9 +572,8 @@ void AliasCommand::execute() {
 		return;
 	}
 
-	aliasCommand = aliasCommand.substr(1, aliasCommand.length() - 2);
+	// Add the alias to the map
 	aliasMap[aliasName] = aliasCommand;
-	std::cout << "Alias added: " << aliasName << "='" << aliasCommand << "'" << std::endl;
 }
 
 // UnaliasCommand Class
