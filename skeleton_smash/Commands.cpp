@@ -207,7 +207,6 @@ void ExternalCommand::execute() {
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
 			shell.getJobsList().addJob(cmdLine, pid, false);
-			//std::cout << pid << std::endl;
 		}
 		else {
 			shell.setForegroundJob(pid, cmdLine);
@@ -715,6 +714,7 @@ void RedirectionCommand::execute() {
 
 // ListDirCommand Class
 ListDirCommand::ListDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+ListDirCommand::~ListDirCommand() {}
 void ListDirCommand::listDirectoryRecursively(const std::string& path, const std::string& indent) const {
 	DIR* dir = opendir(path.c_str());
 	if (!dir) {
@@ -783,6 +783,21 @@ void ListDirCommand::execute() {
 }
 
 
+// WhoamiCommand Class
+WhoamiCommand::WhoamiCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+void WhoamiCommand::execute() {
+	char* username = getenv("USER"); // Retrieve the USER environment variable
+	char* homeDir = getenv("HOME");  // Retrieve the HOME environment variable
+
+	if (username && homeDir) {
+		std::cout << username << " " << homeDir << std::endl;
+	}
+	else {
+		std::cerr << "smash error: whoami: failed to retrieve user information" << std::endl;
+	}
+}
+
+
 // SmallShell Class
 SmallShell::SmallShell()
 	: prompt("smash"), lastWorkingDir(""), foregroundPid(-1), foregroundCommand("") {
@@ -829,6 +844,7 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	if (firstWord == "fg") return new ForegroundCommand(cmd_s.c_str(), &jobs);
 	if (firstWord == "alias") return new AliasCommand(cmd_s.c_str(), aliasMap);
 	if (firstWord == "unalias") return new UnaliasCommand(cmd_s.c_str(), aliasMap);
+	if (firstWord == "whoami") return new WhoamiCommand(cmd_s.c_str());
 
 	return new ExternalCommand(cmd_s.c_str());
 }

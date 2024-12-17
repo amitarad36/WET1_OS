@@ -163,7 +163,6 @@ public:
     void execute() override;
 };
 
-
 class AliasCommand : public BuiltInCommand {
 private:
     std::map<std::string, std::string>& aliasMap;
@@ -197,11 +196,18 @@ public:
 class ListDirCommand : public BuiltInCommand {
 public:
     ListDirCommand(const char* cmd_line);
-    virtual ~ListDirCommand() {}
+    virtual ~ListDirCommand();
     void execute() override;
 
 private:
     void listDirectoryRecursively(const std::string& path, const std::string& indent = "") const;
+};
+
+class WhoamiCommand : public BuiltInCommand {
+public:
+    explicit WhoamiCommand(const char* cmd_line);
+    virtual ~WhoamiCommand() = default;
+    void execute() override;
 };
 
 class SmallShell {
