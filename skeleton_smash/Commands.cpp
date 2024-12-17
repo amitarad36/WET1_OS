@@ -31,47 +31,19 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 		return 0;
 	}
 
-	int i = 0; // Index for args array
 	std::istringstream iss(_trim(cmd_line));
+	int i = 0;
+
 	for (std::string token; iss >> token;) {
-		// Check if token ends with '&' and has extra characters
-		if (token.back() == '&' && token.length() > 1) {
-			token.pop_back(); // Remove '&' from token
-
-			// Add the part before '&' as an argument
-			args[i] = (char*)malloc(token.length() + 1);
-			if (!args[i]) {
-				perror("smash error: malloc failed");
-				exit(1);
-			}
-			strcpy(args[i], token.c_str());
-			i++;
-
-			// Add '&' as a separate argument
-			args[i] = (char*)malloc(2);
-			if (!args[i]) {
-				perror("smash error: malloc failed");
-				exit(1);
-			}
-			strcpy(args[i], "&");
-			i++;
+		args[i] = strdup(token.c_str());
+		if (!args[i]) {
+			perror("smash error: malloc failed");
+			exit(1);
 		}
-		else {
-			// Normal token handling
-			args[i] = (char*)malloc(token.length() + 1);
-			if (!args[i]) {
-				perror("smash error: malloc failed");
-				exit(1);
-			}
-			strcpy(args[i], token.c_str());
-			i++;
-		}
-
-		if (i >= COMMAND_MAX_ARGS - 1) {
-			std::cerr << "smash error: too many arguments" << std::endl;
-			break;
-		}
+		i++;
+		if (i >= COMMAND_MAX_ARGS - 1) break;
 	}
+
 	args[i] = nullptr; // Null-terminate the argument list
 	return i;
 }
@@ -137,21 +109,24 @@ ExternalCommand::~ExternalCommand() {
 	cmdSegments.clear();
 }
 void ExternalCommand::execute() {
-	char* args[COMMAND_MAX_ARGS]; // Array to hold arguments
-	int argc = _parseCommandLine(cmdLine, args); // Parse command line into arguments
+	char* args[COMMAND_MAX_ARGS];
+	int argc = _parseCommandLine(cmdLine, args);
 
-	if (argc == 0) { // No command to execute
-		return;
+	if (argc == 0) return;
+
+	// Check for background execution
+	isBackground = false;
+	if (strcmp(args[argc - 1], "&") == 0) {
+		isBackground = true;
+		free(args[argc - 1]); // Remove the '&'
+		args[argc - 1] = nullptr;
+		argc--;
 	}
 
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		setpgrp(); // Set process group for child
-
-		// Execute the external command using execvp
-		execvp(args[0], args);
-
-		// If execvp fails, print an error
+		setpgrp();
+		execvp(args[0], args); // Execute command
 		perror("smash error: execvp failed");
 		exit(1);
 	}
@@ -162,7 +137,7 @@ void ExternalCommand::execute() {
 		}
 		else {
 			shell.setForegroundJob(pid, getCommandLine());
-			waitpid(pid, nullptr, WUNTRACED); // Wait for the foreground job to finish
+			waitpid(pid, nullptr, WUNTRACED);
 			shell.clearForegroundJob();
 		}
 	}
@@ -170,10 +145,7 @@ void ExternalCommand::execute() {
 		perror("smash error: fork failed");
 	}
 
-	// Free dynamically allocated arguments
-	for (int i = 0; i < argc; ++i) {
-		free(args[i]);
-	}
+	for (int i = 0; i < argc; ++i) free(args[i]);
 }
 
 
@@ -498,38 +470,6 @@ void ForegroundCommand::execute() {
 	}
 }
 
-// BackgroundCommand Class
-BackgroundCommand::BackgroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobsList(jobs) {}
-BackgroundCommand::~BackgroundCommand() {}
-void BackgroundCommand::execute() {
-	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmdLine, args);
-
-	if (argc != 2) {
-		std::cerr << "smash error: bg: invalid arguments" << std::endl;
-		return;
-	}
-
-	int jobId = atoi(args[1]);
-	JobsList::JobEntry* job = jobsList->getJobById(jobId);
-	if (!job) {
-		std::cerr << "smash error: bg: job-id " << jobId << " does not exist" << std::endl;
-		return;
-	}
-
-	if (!job->isStopped) {
-		std::cerr << "smash error: bg: job-id " << jobId << " is not stopped" << std::endl;
-		return;
-	}
-
-	if (kill(job->pid, SIGCONT) == -1) {
-		perror("smash error: bg failed");
-		return;
-	}
-
-	job->isStopped = false;
-	std::cout << job->command << " resumed" << std::endl;
-}
 
 // AliasCommand Class
 AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::string>& aliasMap)
@@ -777,63 +717,34 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	// Handle alias expansion
 	auto aliasIt = aliasMap.find(firstWord);
 	if (aliasIt != aliasMap.end()) {
-		// Expand the alias
 		std::string expandedCommand = aliasIt->second;
 
-		// Append any extra arguments after the alias
+		// Append remaining arguments
 		std::string remainingArgs;
-		getline(iss, remainingArgs); // Get the rest of the command line
+		getline(iss, remainingArgs);
 		if (!remainingArgs.empty()) {
 			expandedCommand += " " + _trim(remainingArgs);
 		}
 
-		// Replace the command with the expanded version
 		cmd_s = _trim(expandedCommand);
 	}
 
-	// Parse the new first word after alias expansion
+	// Parse command again after alias expansion
 	std::istringstream expandedIss(cmd_s);
 	expandedIss >> firstWord;
 
-	// Check for built-in commands
-	if (cmd_s.find('>') != std::string::npos) {
-		return new RedirectionCommand(cmd_s.c_str());
-	}
-	else if (firstWord == "chprompt") {
-		return new ChangePromptCommand(cmd_s.c_str(), prompt);
-	}
-	else if (firstWord == "pwd") {
-		return new GetCurrDirCommand(cmd_s.c_str());
-	}
-	else if (firstWord == "showpid") {
-		return new ShowPidCommand(cmd_s.c_str());
-	}
-	else if (firstWord == "cd") {
-		return new ChangeDirCommand(cmd_s.c_str());
-	}
-	else if (firstWord == "jobs") {
-		return new JobsCommand(cmd_s.c_str(), &jobs);
-	}
-	else if (firstWord == "kill") {
-		return new KillCommand(cmd_s.c_str(), &jobs);
-	}
-	else if (firstWord == "quit") {
-		return new QuitCommand(cmd_s.c_str(), &jobs);
-	}
-	else if (firstWord == "fg") {
-		return new ForegroundCommand(cmd_s.c_str(), &jobs);
-	}
-	else if (firstWord == "bg") {
-		return new BackgroundCommand(cmd_s.c_str(), &jobs);
-	}
-	else if (firstWord == "alias") {
-		return new AliasCommand(cmd_s.c_str(), aliasMap);
-	}
-	else if (firstWord == "unalias") {
-		return new UnaliasCommand(cmd_s.c_str(), aliasMap);
-	}
+	if (cmd_s.find('>') != std::string::npos) return new RedirectionCommand(cmd_s.c_str());
+	if (firstWord == "chprompt") return new ChangePromptCommand(cmd_s.c_str(), prompt);
+	if (firstWord == "pwd") return new GetCurrDirCommand(cmd_s.c_str());
+	if (firstWord == "showpid") return new ShowPidCommand(cmd_s.c_str());
+	if (firstWord == "cd") return new ChangeDirCommand(cmd_s.c_str());
+	if (firstWord == "jobs") return new JobsCommand(cmd_s.c_str(), &jobs);
+	if (firstWord == "kill") return new KillCommand(cmd_s.c_str(), &jobs);
+	if (firstWord == "quit") return new QuitCommand(cmd_s.c_str(), &jobs);
+	if (firstWord == "fg") return new ForegroundCommand(cmd_s.c_str(), &jobs);
+	if (firstWord == "alias") return new AliasCommand(cmd_s.c_str(), aliasMap);
+	if (firstWord == "unalias") return new UnaliasCommand(cmd_s.c_str(), aliasMap);
 
-	// External command: pass the expanded command line as-is
 	return new ExternalCommand(cmd_s.c_str());
 }
 void SmallShell::executeCommand(const char* cmd_line) {

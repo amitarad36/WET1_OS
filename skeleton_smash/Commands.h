@@ -159,11 +159,6 @@ public:
 class BackgroundCommand : public BuiltInCommand {
     JobsList* jobsList;
 
-public:
-    BackgroundCommand(const char* cmd_line, JobsList* jobs);
-    ~BackgroundCommand();
-    void execute() override;
-};
 
 class AliasCommand : public BuiltInCommand {
 private:
