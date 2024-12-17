@@ -156,9 +156,6 @@ public:
     void execute() override;
 };
 
-class BackgroundCommand : public BuiltInCommand {
-    JobsList* jobsList;
-
 
 class AliasCommand : public BuiltInCommand {
 private:
