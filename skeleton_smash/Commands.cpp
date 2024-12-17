@@ -31,20 +31,40 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 		return 0;
 	}
 
-	std::istringstream iss(_trim(cmd_line));
 	int i = 0;
-
+	std::istringstream iss(_trim(cmd_line));
 	for (std::string token; iss >> token;) {
-		args[i] = strdup(token.c_str());
-		if (!args[i]) {
-			perror("smash error: malloc failed");
-			exit(1);
+		// If the token ends with '&', split it into two arguments
+		if (token.back() == '&' && token.length() > 1) {
+			token.pop_back();  // Remove the trailing '&'
+			args[i] = strdup(token.c_str());  // Add the token without '&'
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			i++;
+
+			args[i] = strdup("&");  // Add '&' as a separate argument
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			i++;
 		}
-		i++;
+		else {
+			// Normal token handling
+			args[i] = strdup(token.c_str());
+			if (!args[i]) {
+				perror("smash error: malloc failed");
+				exit(1);
+			}
+			i++;
+		}
+
 		if (i >= COMMAND_MAX_ARGS - 1) break;
 	}
 
-	args[i] = nullptr; // Null-terminate the argument list
+	args[i] = nullptr;  // Null-terminate the argument list
 	return i;
 }
 bool isDirectory(const std::string& path) {
