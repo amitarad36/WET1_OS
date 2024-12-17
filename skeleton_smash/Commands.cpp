@@ -92,17 +92,14 @@ void sigchldHandler(int sig_num) {
 	}
 }
 
+
 // Setup signal handling for SIGCHLD
 void setupSignals() {
 	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = sigchldHandler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-
-	if (sigaction(SIGCHLD, &sa, nullptr) == -1) {
+	sa.sa_handler = ctrlCHandler;
+	sa.sa_flags = SA_RESTART; // Restart system calls if interrupted
+	if (sigaction(SIGINT, &sa, nullptr) == -1) {
 		perror("smash error: sigaction failed");
-		exit(1);
 	}
 }
 
@@ -156,37 +153,32 @@ void ExternalCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
 	int argc = _parseCommandLine(cmdLine, args);
 
-	if (argc == 0) {
-		return; // No command to execute
-	}
+	if (argc == 0) return; // Empty command
 
-	// Check for background execution
 	bool isBackground = false;
-	if (argc > 0 && strcmp(args[argc - 1], "&") == 0) {
+
+	if (strcmp(args[argc - 1], "&") == 0) {
 		isBackground = true;
-		free(args[argc - 1]); // Remove '&' from args
+		free(args[argc - 1]);
 		args[argc - 1] = nullptr;
 	}
 
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		if (isBackground) {
-			setpgrp(); // Detach background job from the shell's process group
-		}
-		execvp(args[0], args); // Execute external command
-		perror("smash error: execvp failed"); // If execvp fails
+		setpgrp(); // Set new process group
+		execvp(args[0], args); // Execute the command
+		perror("smash error: execvp failed");
 		exit(1);
 	}
 	else if (pid > 0) { // Parent process
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
-			shell.getJobsList().addJob(getCommandLine(), pid, false);
+			shell.getJobsList().addJob(cmdLine, pid, false); // Add to jobs list
+			cout << "smash: background job started with pid " << pid << endl;
 		}
 		else {
-			shell.setForegroundJob(pid, getCommandLine());
-			if (waitpid(pid, nullptr, WUNTRACED) == -1) {
-				perror("smash error: waitpid failed");
-			}
+			shell.setForegroundJob(pid, cmdLine);
+			waitpid(pid, nullptr, WUNTRACED); // Wait for foreground job
 			shell.clearForegroundJob();
 		}
 	}
@@ -194,7 +186,6 @@ void ExternalCommand::execute() {
 		perror("smash error: fork failed");
 	}
 
-	// Free dynamically allocated arguments
 	for (int i = 0; i < argc; ++i) {
 		free(args[i]);
 	}
@@ -339,11 +330,17 @@ void JobsList::printJobs() const {
 void JobsList::removeFinishedJobs() {
 	for (auto it = jobs.begin(); it != jobs.end();) {
 		int status;
-		if (waitpid((*it)->pid, &status, WNOHANG) > 0) {
+		pid_t result = waitpid((*it)->pid, &status, WNOHANG);
+
+		if (result > 0) { // Job finished
 			delete* it;
 			it = jobs.erase(it);
 		}
-		else {
+		else if (result == 0) { // Job still running
+			++it;
+		}
+		else { // Error in waitpid
+			perror("smash error: waitpid failed");
 			++it;
 		}
 	}
