@@ -761,22 +761,24 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
 
 	// Handle alias expansion
-	if (aliasMap.count(firstWord)) {
-		std::string expandedCommand = aliasMap[firstWord];
-		size_t firstWordLength = firstWord.length();
+	auto aliasIt = aliasMap.find(firstWord);
+	if (aliasIt != aliasMap.end()) {
+		// Replace the first word (alias) with its corresponding command
+		std::string expandedCommand = aliasIt->second;
 
-		// Replace alias with its corresponding command and append the rest of the input
-		expandedCommand += cmd_s.substr(firstWordLength);
+		// Append the rest of the original command (if any)
+		if (cmd_s.length() > firstWord.length()) {
+			expandedCommand += " " + cmd_s.substr(firstWord.length() + 1);
+		}
 
-		// Re-assign the full command line
 		cmd_s = _trim(expandedCommand);
 	}
 
-	// Re-parse the expanded command line to get the first word
+	// Parse the new first word after alias expansion
 	std::istringstream iss(cmd_s);
 	iss >> firstWord;
 
-	// Built-in or external command determination
+	// Check for built-in commands
 	if (cmd_s.find('>') != std::string::npos) {
 		return new RedirectionCommand(cmd_s.c_str());
 	}
@@ -813,10 +815,9 @@ Command* SmallShell::createCommand(const char* cmd_line) {
 	else if (firstWord == "unalias") {
 		return new UnaliasCommand(cmd_s.c_str(), aliasMap);
 	}
-	else {
-		// Treat it as an external command
-		return new ExternalCommand(cmd_s.c_str());
-	}
+
+	// External command: pass the expanded command line as-is
+	return new ExternalCommand(cmd_s.c_str());
 }
 void SmallShell::executeCommand(const char* cmd_line) {
 	Command* cmd = createCommand(cmd_line);
