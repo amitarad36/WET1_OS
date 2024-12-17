@@ -107,12 +107,25 @@ void ctrlCHandler(int sig_num) {
 
 // Signal handler for SIGCHLD
 void sigchldHandler(int sig_num) {
-	(void)sig_num; // Avoid unused parameter warning
-	while (waitpid(-1, nullptr, WNOHANG) > 0) {
-		// Reap terminated background processes
+	(void)sig_num; // Suppress unused warning
+	int status;
+	pid_t pid;
+
+	// Reap terminated child processes
+	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		SmallShell& shell = SmallShell::getInstance();
+		JobsList& jobsList = shell.getJobsList();
+
+		// Remove the job from the jobs list
+		for (auto it = jobsList.getJobs().begin(); it != jobsList.getJobs().end(); ++it) {
+			if ((*it)->pid == pid) {
+				std::cout << "smash: process " << pid << " (" << (*it)->command << ") finished" << std::endl;
+				jobsList.removeJobById((*it)->jobId);
+				break;
+			}
+		}
 	}
 }
-
 
 // Setup signal handling for SIGCHLD
 void setupSignals() {
@@ -174,10 +187,10 @@ void ExternalCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
 	int argc = _parseCommandLine(cmdLine, args);
 
-	if (argc == 0) return; // Empty command
+	if (argc == 0) return;
 
+	// Check for background execution
 	bool isBackground = false;
-
 	if (strcmp(args[argc - 1], "&") == 0) {
 		isBackground = true;
 		free(args[argc - 1]);
@@ -186,20 +199,20 @@ void ExternalCommand::execute() {
 
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		setpgrp(); // Set new process group
-		execvp(args[0], args); // Execute the command
+		setpgrp(); // Create a new process group
+		execvp(args[0], args); // Execute command
 		perror("smash error: execvp failed");
 		exit(1);
 	}
 	else if (pid > 0) { // Parent process
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
-			shell.getJobsList().addJob(cmdLine, pid, false); // Add to jobs list
-			cout << "smash: background job started with pid " << pid << endl;
+			shell.getJobsList().addJob(cmdLine, pid, false);
+			std::cout << pid << std::endl;
 		}
 		else {
 			shell.setForegroundJob(pid, cmdLine);
-			waitpid(pid, nullptr, WUNTRACED); // Wait for foreground job
+			waitpid(pid, nullptr, WUNTRACED);
 			shell.clearForegroundJob();
 		}
 	}
@@ -207,6 +220,7 @@ void ExternalCommand::execute() {
 		perror("smash error: fork failed");
 	}
 
+	// Free allocated arguments
 	for (int i = 0; i < argc; ++i) {
 		free(args[i]);
 	}

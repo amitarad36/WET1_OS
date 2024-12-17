@@ -10,6 +10,10 @@ int main(int argc, char* argv[]) {
         perror("smash error: failed to set ctrl-C handler");
         exit(1); // Exit if signal setup fails
     }
+    if (signal(SIGCHLD, sigchldHandler) == SIG_ERR) {
+        perror("smash error: failed to set SIGCHLD handler");
+        exit(1);
+    }
 
     SmallShell& smash = SmallShell::getInstance();
 
