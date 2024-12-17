@@ -36,9 +36,9 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 	for (std::string token; iss >> token;) {
 		// Check if the token ends with '&'
 		if (token.back() == '&' && token.length() > 1) {
-			// Separate the `&` from the token
-			token.pop_back(); // Remove '&' from the token
-			args[i] = (char*)malloc(token.length() + 1); // Allocate memory
+			// Separate the number and '&'
+			token.pop_back(); // Remove the '&' from the token
+			args[i] = (char*)malloc(token.length() + 1); // Allocate memory for the number
 			if (!args[i]) {
 				perror("smash error: malloc failed");
 				exit(1);
@@ -46,7 +46,7 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 			strcpy(args[i], token.c_str());
 			++i;
 
-			// Add `&` as a separate argument
+			// Add '&' as a separate argument
 			args[i] = (char*)malloc(2); // Allocate memory for "&"
 			if (!args[i]) {
 				perror("smash error: malloc failed");
@@ -66,7 +66,7 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 			++i;
 		}
 
-		if (i >= COMMAND_MAX_ARGS) {
+		if (i >= COMMAND_MAX_ARGS - 1) {
 			std::cerr << "smash error: too many arguments" << std::endl;
 			break;
 		}
