@@ -119,7 +119,6 @@ void sigchldHandler(int sig_num) {
 		// Remove the job from the jobs list
 		for (auto it = jobsList.getJobs().begin(); it != jobsList.getJobs().end(); ++it) {
 			if ((*it)->pid == pid) {
-				std::cout << "smash: process " << pid << " (" << (*it)->command << ") finished" << std::endl;
 				jobsList.removeJobById((*it)->jobId);
 				break;
 			}
@@ -208,7 +207,7 @@ void ExternalCommand::execute() {
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
 			shell.getJobsList().addJob(cmdLine, pid, false);
-			std::cout << pid << std::endl;
+			//std::cout << pid << std::endl;
 		}
 		else {
 			shell.setForegroundJob(pid, cmdLine);
