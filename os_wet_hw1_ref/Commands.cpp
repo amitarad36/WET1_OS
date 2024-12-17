@@ -50,6 +50,14 @@ string _trim(const std::string &s) {
     return _rtrim(_ltrim(s));
 }
 
+void _removeBackgroundSignTemp(std::string &cmd_line)
+    {
+        cmd_line = _trim(cmd_line);
+        if (cmd_line[cmd_line.length() - 1] == '&')
+        {
+            cmd_line = cmd_line.substr(0, cmd_line.length() - 1);
+        }
+    }
 int _parseCommandLine(const char *cmd_line, char **args) {
     FUNC_ENTRY()
     int i = 0;
@@ -90,15 +98,6 @@ void _removeBackgroundSign(char *cmd_line) {
     cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-void _removeBackgroundSignTemp(std::string &cmd_line)
-    {
-        cmd_line = _trim(cmd_line);
-        if (cmd_line[cmd_line.length() - 1] == '&')
-        {
-            cmd_line = cmd_line.substr(0, cmd_line.length() - 1);
-        }
-    }
-
 // TODO: Add your implementation for classes in Commands.h 
 void createVectorForLine(const char* cmd_line,std::vector<std::string>& line)
 {
@@ -129,7 +128,10 @@ std::string SmallShell::getPWD()
     return std::string(place);
 }
 
-SmallShell::SmallShell():prompt("smash"),pid(getpid()),workingDirectory(getPWD()),prevworkingDirectory(""),job(new JobsList),alias(),aliasInOrder(),currentFrontPid(-1),coutdirect(std::cout.rdbuf()),commandString(),cmd_lineForWatchCommand(),inDup(dup(stdIn)),outDup(dup(stdOut)),errDup(dup(stdErr)),watchFrontPid(-1),watchBackPid(-1){}
+SmallShell::SmallShell():prompt("smash"),pid(getpid()),workingDirectory(getPWD()),prevworkingDirectory(""),job(new JobsList),alias(),aliasInOrder(),currentFrontPid(-1),coutdirect(std::cout.rdbuf()),commandString(),cmd_lineForWatchCommand(),inDup(dup(stdIn)),outDup(dup(stdOut)),errDup(dup(stdErr)),watchFrontPid(-1),watchBackPid(-1)
+{
+// TODO: add your implementation
+}
 
 SmallShell::~SmallShell() {
 // TODO: add your implementation
@@ -180,6 +182,9 @@ bool SmallShell::validCommand(std::string name)
   }
   return false;
 }
+/**
+* Creates and returns a pointer to Command class which matches the given command line (cmd_line)
+*/
 
 Command *SmallShell::CreateCommand(const char *cmd_line) {
     // For example:
@@ -593,56 +598,56 @@ ChangeDirCommand
 */
 void ChangeDirCommand::execute()
 {
-	if (cmd_segments.size() > 2)
-	{
-		if (cmd_segments[cmd_segments.size() - 1].compare("&") == 0)
-		{
-			cmd_segments.pop_back();
-		}
-	}
-	if (cmd_segments.size() == 1)
-	{
-		SmallShell::getInstance().changePWD(SmallShell::getInstance().getPWD());
-		return;
-	}
-	if (cmd_segments.size() == 2)
-	{
-		std::string path = cmd_segments[1];
-		_removeBackgroundSignTemp(path);
-		if (path.compare("-") == 0)
-		{
-			if (SmallShell::getInstance().getPrevPWD().compare("") == 0)
-			{
-				std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
-			}
-			else
-			{
-				if (chdir(SmallShell::getInstance().getPrevPWD().c_str()) != -1)
-				{
-					SmallShell::getInstance().changePWD(SmallShell::getInstance().getPrevPWD());
-				}
-				else
-				{
-					perror("smash error: chdir failed");
-				}
-			}
-		}
-		else
-		{
-			if (chdir(path.c_str()) != -1)
-			{
-				SmallShell::getInstance().changePWD(path);
-			}
-			else
-			{
-				perror("smash error: chdir failed");
-			}
-		}
-	}
-	else
-	{
-		std::cerr << "smash error: cd: too many arguments" << std::endl;
-	}
+  if(cmd_segments.size()>2)
+  {
+    if(cmd_segments[cmd_segments.size()-1].compare("&")==0)
+    {
+      cmd_segments.pop_back();
+    }
+  }
+  if(cmd_segments.size()==1)
+  {
+    SmallShell::getInstance().changePWD(SmallShell::getInstance().getPWD());
+    return;
+  }
+  if(cmd_segments.size()==2)
+  {
+    std::string path=cmd_segments[1];
+    _removeBackgroundSignTemp(path);
+    if(path.compare("-")==0)
+    {
+      if(SmallShell::getInstance().getPrevPWD().compare("")==0)
+      {
+        std::cerr <<"smash error: cd: OLDPWD not set" << std::endl;
+      }
+      else
+      {
+        if(chdir(SmallShell::getInstance().getPrevPWD().c_str())!=-1)
+        {
+          SmallShell::getInstance().changePWD(SmallShell::getInstance().getPrevPWD());
+        }
+        else
+        {
+          perror("smash error: chdir failed");
+        }
+      }
+    }
+    else
+    {
+      if(chdir(path.c_str())!=-1)
+      {
+        SmallShell::getInstance().changePWD(path);
+      }
+      else
+      {
+        perror("smash error: chdir failed");
+      }
+    }
+  }
+  else
+  {
+    std::cerr <<"smash error: cd: too many arguments" << std::endl;
+  }
 }
 
 /*
@@ -982,7 +987,6 @@ bool withDirection(std::string line)
   }
   return (line[0]=='.' && line[1]=='.' && line[2]=='/');
 }
-
 void ExternalCommand::execute()
 {
   pid_t pid = fork();
