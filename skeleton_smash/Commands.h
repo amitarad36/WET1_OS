@@ -6,7 +6,8 @@
 #include <vector>
 #include <list>
 #include <map>
-#include <set> 
+#include <set>
+#include <signal.h>
 
 
 // constants
