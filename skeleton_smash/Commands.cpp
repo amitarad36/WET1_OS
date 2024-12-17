@@ -769,25 +769,30 @@ SmallShell& SmallShell::getInstance() {
 }
 Command* SmallShell::createCommand(const char* cmd_line) {
 	std::string cmd_s = _trim(std::string(cmd_line));
-	std::string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" "));
+	std::istringstream iss(cmd_s);
+	std::string firstWord;
+	iss >> firstWord;
 
 	// Handle alias expansion
 	auto aliasIt = aliasMap.find(firstWord);
 	if (aliasIt != aliasMap.end()) {
-		// Replace the first word (alias) with its corresponding command
+		// Expand the alias
 		std::string expandedCommand = aliasIt->second;
 
-		// Append the rest of the original command (if any)
-		if (cmd_s.length() > firstWord.length()) {
-			expandedCommand += " " + cmd_s.substr(firstWord.length() + 1);
+		// Append any extra arguments after the alias
+		std::string remainingArgs;
+		getline(iss, remainingArgs); // Get the rest of the command line
+		if (!remainingArgs.empty()) {
+			expandedCommand += " " + _trim(remainingArgs);
 		}
 
+		// Replace the command with the expanded version
 		cmd_s = _trim(expandedCommand);
 	}
 
 	// Parse the new first word after alias expansion
-	std::istringstream iss(cmd_s);
-	iss >> firstWord;
+	std::istringstream expandedIss(cmd_s);
+	expandedIss >> firstWord;
 
 	// Check for built-in commands
 	if (cmd_s.find('>') != std::string::npos) {
