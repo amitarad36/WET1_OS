@@ -27,43 +27,44 @@ std::string _trim(const std::string& str) {
 }
 int _parseCommandLine(const std::string& cmd_line, char** args) {
 	if (cmd_line.empty()) {
-		args[0] = nullptr; // Null-terminate in case of empty input
+		args[0] = nullptr;
 		return 0;
 	}
 
-	int i = 0;
-	std::istringstream iss(_trim(cmd_line)); // Use _trim to clean input
+	int i = 0; // Index for args array
+	std::istringstream iss(_trim(cmd_line));
 	for (std::string token; iss >> token;) {
-		// Check if the token ends with '&'
+		// Check if token ends with '&' and has extra characters
 		if (token.back() == '&' && token.length() > 1) {
-			// Separate the number and '&'
-			token.pop_back(); // Remove the '&' from the token
-			args[i] = (char*)malloc(token.length() + 1); // Allocate memory for the number
+			token.pop_back(); // Remove '&' from token
+
+			// Add the part before '&' as an argument
+			args[i] = (char*)malloc(token.length() + 1);
 			if (!args[i]) {
 				perror("smash error: malloc failed");
 				exit(1);
 			}
 			strcpy(args[i], token.c_str());
-			++i;
+			i++;
 
 			// Add '&' as a separate argument
-			args[i] = (char*)malloc(2); // Allocate memory for "&"
+			args[i] = (char*)malloc(2);
 			if (!args[i]) {
 				perror("smash error: malloc failed");
 				exit(1);
 			}
 			strcpy(args[i], "&");
-			++i;
+			i++;
 		}
 		else {
 			// Normal token handling
-			args[i] = (char*)malloc(token.length() + 1); // Allocate memory
+			args[i] = (char*)malloc(token.length() + 1);
 			if (!args[i]) {
 				perror("smash error: malloc failed");
 				exit(1);
 			}
 			strcpy(args[i], token.c_str());
-			++i;
+			i++;
 		}
 
 		if (i >= COMMAND_MAX_ARGS - 1) {
@@ -72,7 +73,7 @@ int _parseCommandLine(const std::string& cmd_line, char** args) {
 		}
 	}
 	args[i] = nullptr; // Null-terminate the argument list
-	return i;          // Return the number of arguments parsed
+	return i;
 }
 bool isDirectory(const std::string& path) {
 	struct stat statbuf;
