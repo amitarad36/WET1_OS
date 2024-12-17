@@ -524,16 +524,17 @@ AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::stri
 	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
 AliasCommand::~AliasCommand() {}
 void AliasCommand::execute() {
-	// Trim the input command
-	std::string commandLine = _trim(cmdLine);
-
 	// Check if the command is just "alias" (list all aliases)
 	if (cmdSegments.size() == 1) {
+		// Iterate through aliasMap and print all aliases
 		for (const auto& alias : aliasMap) {
 			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
 		}
-		return;
+		return; // Exit after listing aliases
 	}
+
+	// Otherwise, handle alias creation
+	std::string commandLine = _trim(cmdLine);
 
 	// Ensure the command starts with "alias "
 	if (commandLine.substr(0, 6) != "alias ") {
