@@ -524,65 +524,49 @@ AliasCommand::AliasCommand(const char* cmd_line, std::map<std::string, std::stri
 	: BuiltInCommand(cmd_line), aliasMap(aliasMap) {}
 AliasCommand::~AliasCommand() {}
 void AliasCommand::execute() {
-	// Check if the command is just "alias" (list all aliases)
-	if (cmdSegments.size() == 1) {
-		// Iterate through aliasMap and print all aliases
+	std::string commandLine = _trim(cmdLine);
+
+	// If command is exactly "alias", list all aliases
+	if (commandLine == "alias") {
 		for (const auto& alias : aliasMap) {
 			std::cout << alias.first << "='" << alias.second << "'" << std::endl;
 		}
-		return; // Exit after listing aliases
-	}
-
-	// Otherwise, handle alias creation
-	std::string commandLine = _trim(cmdLine);
-
-	// Ensure the command starts with "alias "
-	if (commandLine.substr(0, 6) != "alias ") {
-		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Find the '=' sign to separate alias name and command
+	// Proceed with alias creation logic
 	size_t equalPos = commandLine.find('=');
 	if (equalPos == std::string::npos || equalPos < 6) { // No '=' or missing alias name
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Extract alias name and command
 	std::string aliasName = _trim(commandLine.substr(6, equalPos - 6));
 	std::string aliasCommand = _trim(commandLine.substr(equalPos + 1));
 
-	// Validate alias name (letters, numbers, underscores only)
+	// Validate alias name and format
 	if (!std::regex_match(aliasName, std::regex("^[a-zA-Z0-9_]+$"))) {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Check for valid command format: starts and ends with single quotes
 	if (aliasCommand.length() < 2 || aliasCommand.front() != '\'' || aliasCommand.back() != '\'') {
 		std::cerr << "smash error: alias: invalid alias format" << std::endl;
 		return;
 	}
 
-	// Remove surrounding quotes from alias command
-	aliasCommand = aliasCommand.substr(1, aliasCommand.length() - 2);
-
-	// Reserved keywords to avoid conflicts
+	// Check for conflicts
 	static const std::set<std::string> reservedKeywords = {
 		"quit", "fg", "bg", "jobs", "kill", "cd", "listdir", "chprompt", "alias", "unalias", "pwd", "showpid"
 	};
 
-	// Check for reserved keyword or existing alias conflict
 	if (reservedKeywords.count(aliasName) || aliasMap.count(aliasName)) {
 		std::cerr << "smash error: alias: " << aliasName << " already exists or is a reserved command" << std::endl;
 		return;
 	}
 
-	// Add or update the alias in the map
+	aliasCommand = aliasCommand.substr(1, aliasCommand.length() - 2);
 	aliasMap[aliasName] = aliasCommand;
-
-	// Print success message
 	std::cout << "Alias added: " << aliasName << "='" << aliasCommand << "'" << std::endl;
 }
 
