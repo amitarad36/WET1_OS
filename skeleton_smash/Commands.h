@@ -7,18 +7,23 @@
 #include <list>
 #include <map>
 #include <set>
-#include <signal.h>
 
 
-// constants
+// Constants
 constexpr int COMMAND_MAX_LENGTH = 200;
 constexpr int COMMAND_MAX_ARGS = 20;
 
 
+// Utility
 std::string _trim(const std::string& str);
 int _parseCommandLine(const std::string& cmd_line, char** args);
 bool isDirectory(const std::string& path);
 void _trimAmp(std::string& cmd_line);
+
+
+// Signal handling function prototypes
+void sigchldHandler(int sig_num);
+void setupSignals();
 
 
 class JobsList;
