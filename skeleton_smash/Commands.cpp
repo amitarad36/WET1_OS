@@ -136,15 +136,21 @@ ExternalCommand::~ExternalCommand() {
 	cmdSegments.clear();
 }
 void ExternalCommand::execute() {
+	char* args[COMMAND_MAX_ARGS]; // Array to hold arguments
+	int argc = _parseCommandLine(cmdLine, args); // Parse command line into arguments
+
+	if (argc == 0) { // No command to execute
+		return;
+	}
+
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		setpgrp();
-		char* args[COMMAND_MAX_ARGS];
-		for (size_t i = 0; i < cmdSegments.size(); ++i) {
-			args[i] = strdup(cmdSegments[i].c_str());
-		}
-		args[cmdSegments.size()] = nullptr;
+		setpgrp(); // Set process group for child
+
+		// Execute the external command using execvp
 		execvp(args[0], args);
+
+		// If execvp fails, print an error
 		perror("smash error: execvp failed");
 		exit(1);
 	}
@@ -155,12 +161,17 @@ void ExternalCommand::execute() {
 		}
 		else {
 			shell.setForegroundJob(pid, getCommandLine());
-			waitpid(pid, nullptr, 0);
+			waitpid(pid, nullptr, WUNTRACED); // Wait for the foreground job to finish
 			shell.clearForegroundJob();
 		}
 	}
-	else {
+	else { // Fork failed
 		perror("smash error: fork failed");
+	}
+
+	// Free dynamically allocated arguments
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
 	}
 }
 
