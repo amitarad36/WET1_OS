@@ -84,6 +84,25 @@ void _trimAmp(std::string& cmd_line) {
 }
 
 
+// ctrlC Handler
+void ctrlCHandler(int sig_num) {
+	SmallShell& shell = SmallShell::getInstance();
+	int fgPid = shell.getForegroundPid();
+
+	cout << "smash: got ctrl-C" << endl;
+
+	if (fgPid > 0) {
+		if (kill(fgPid, SIGKILL) == -1) {
+			perror("smash error: kill failed");
+		}
+		else {
+			cout << "smash: process " << fgPid << " was killed" << endl;
+		}
+		shell.clearForegroundJob(); // Clear the foreground job
+	}
+}
+
+
 // Signal handler for SIGCHLD
 void sigchldHandler(int sig_num) {
 	(void)sig_num; // Avoid unused parameter warning

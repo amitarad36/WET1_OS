@@ -22,6 +22,7 @@ void _trimAmp(std::string& cmd_line);
 
 
 // Signal handling function prototypes
+void ctrlCHandler(int sig_num);
 void sigchldHandler(int sig_num);
 void setupSignals();
 
