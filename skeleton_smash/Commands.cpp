@@ -130,34 +130,38 @@ ExternalCommand::~ExternalCommand() {
 }
 void ExternalCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
-	int argc = _parseCommandLine(cmdLine, args);
+	int argc = _parseCommandLine(cmdLine, args); // Parse arguments
 
-	if (argc == 0) return;
+	if (argc == 0) return; // No command to execute
 
 	// Check for background execution
-	isBackground = false;
-	if (strcmp(args[argc - 1], "&") == 0) {
+	bool isBackground = false;
+	if (argc > 0 && strcmp(args[argc - 1], "&") == 0) {
 		isBackground = true;
-		free(args[argc - 1]); // Remove the '&'
+		free(args[argc - 1]); // Remove '&' from args
 		args[argc - 1] = nullptr;
-		argc--;
+		argc--; // Decrease argument count
 	}
 
 	pid_t pid = fork();
 	if (pid == 0) { // Child process
-		setpgrp();
-		execvp(args[0], args); // Execute command
+		// Detach background jobs by creating a new process group
+		if (isBackground) {
+			setpgrp();
+		}
+		execvp(args[0], args); // Execute external command
 		perror("smash error: execvp failed");
 		exit(1);
 	}
 	else if (pid > 0) { // Parent process
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
+			std::cout << "smash: background job started with pid " << pid << std::endl;
 			shell.getJobsList().addJob(getCommandLine(), pid, false);
 		}
-		else {
+		else { // Foreground job
 			shell.setForegroundJob(pid, getCommandLine());
-			waitpid(pid, nullptr, WUNTRACED);
+			waitpid(pid, nullptr, WUNTRACED); // Wait for foreground job
 			shell.clearForegroundJob();
 		}
 	}
@@ -165,7 +169,10 @@ void ExternalCommand::execute() {
 		perror("smash error: fork failed");
 	}
 
-	for (int i = 0; i < argc; ++i) free(args[i]);
+	// Free allocated memory
+	for (int i = 0; i < argc; ++i) {
+		free(args[i]);
+	}
 }
 
 
