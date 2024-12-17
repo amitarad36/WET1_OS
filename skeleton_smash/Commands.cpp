@@ -156,7 +156,6 @@ void ExternalCommand::execute() {
 	else if (pid > 0) { // Parent process
 		SmallShell& shell = SmallShell::getInstance();
 		if (isBackground) {
-			std::cout << "smash: background job started with pid " << pid << std::endl;
 			shell.getJobsList().addJob(getCommandLine(), pid, false);
 		}
 		else { // Foreground job
