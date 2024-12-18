@@ -126,6 +126,7 @@ void sigchldHandler(int sig_num) {
 	}
 }
 
+
 // Setup signal handling for SIGCHLD
 void setupSignals() {
 	struct sigaction sa;
