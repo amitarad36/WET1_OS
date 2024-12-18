@@ -430,41 +430,33 @@ void KillCommand::execute() {
 	char* args[COMMAND_MAX_ARGS];
 	int argc = _parseCommandLine(cmdLine, args);
 
-	// Check for valid arguments: exactly 3 arguments and the second argument starts with '-'
-	if (argc != 3 || args[1][0] != '-') {
+	// Validate input: must have exactly 3 arguments and first starts with '-'
+	if (argc != 3 || args[1][0] != '-' || !isdigit(args[1][1]) || !isdigit(args[2][0])) {
 		std::cerr << "smash error: kill: invalid arguments" << std::endl;
-		for (int i = 0; i < argc; ++i) {
-			free(args[i]);
-		}
+		for (int i = 0; i < argc; ++i) free(args[i]);
 		return;
 	}
 
-	// Parse the signal number and job ID
-	int signal = atoi(args[1] + 1);  // Skip the '-' character
-	int jobId = atoi(args[2]);
+	int signum = atoi(args[1] + 1);  // Skip '-' and parse the signal number
+	int jobId = atoi(args[2]);       // Parse job ID
 
-	// Find the job in the JobsList
+	// Validate job ID
 	JobsList::JobEntry* job = jobsList->getJobById(jobId);
 	if (!job) {
 		std::cerr << "smash error: kill: job-id " << jobId << " does not exist" << std::endl;
-		for (int i = 0; i < argc; ++i) {
-			free(args[i]);
-		}
+		for (int i = 0; i < argc; ++i) free(args[i]);
 		return;
 	}
 
-	// Send the signal to the process
-	if (kill(job->pid, signal) == -1) {
+	// Send signal to process
+	if (kill(job->pid, signum) == -1) {
 		perror("smash error: kill failed");
 	}
 	else {
-		std::cout << "signal number " << signal << " was sent to pid " << job->pid << std::endl;
+		std::cout << "signal number " << signum << " was sent to pid " << job->pid << std::endl;
 	}
 
-	// Free allocated memory
-	for (int i = 0; i < argc; ++i) {
-		free(args[i]);
-	}
+	for (int i = 0; i < argc; ++i) free(args[i]);
 }
 
 
