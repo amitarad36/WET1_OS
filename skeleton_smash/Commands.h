@@ -32,18 +32,18 @@ class JobsList;
 class Command {
 protected:
     std::vector<std::string> cmdSegments;
-    int processId;
-    bool isBackground;
-    std::string cmdLine;
+    int m_PID;
+    bool m_is_background;
+    std::string m_cmd_line;
     std::string alias;
-    std::string fileRedirect;
+    std::string m_file_redirect;
 
 public:
     Command(const char* cmd_line);
     virtual ~Command();
     virtual void execute() = 0;
-    int getProcessId() const;
-    void setProcessId(int pid);
+    int getm_PID() const;
+    void setm_PID(int pid);
     std::string getAlias() const;
     void setAlias(const std::string& aliasCommand);
     std::string getPath() const;
@@ -99,30 +99,30 @@ class JobsList {
 public:
     class JobEntry {
     public:
-        int jobId;
+        int m_job_id;
         int pid;
-        bool isStopped;
+        bool m_is_stopped;
         std::string command;
 
-        JobEntry(int jobId, int pid, const std::string& command, bool isStopped)
-            : jobId(jobId), pid(pid), isStopped(isStopped), command(command) {}
+        JobEntry(int m_job_id, int pid, const std::string& command, bool m_is_stopped)
+            : m_job_id(m_job_id), pid(pid), m_is_stopped(m_is_stopped), command(command) {}
         ~JobEntry() {}
     };
 
 private:
     std::list<JobEntry*> jobs;
-    int lastJobId;
+    int lastm_job_id;
 
 public:
     JobsList();
     ~JobsList();
     int size() const;
     const std::list<JobEntry*>& getJobs() const;
-    void addJob(const std::string& command, int pid, bool isStopped = false);
+    void addJob(const std::string& command, int pid, bool m_is_stopped = false);
     void printJobs() const;
     void removeFinishedJobs();
-    JobEntry* getJobById(int jobId);
-    void removeJobById(int jobId);
+    JobEntry* getJobById(int m_job_id);
+    void removeJobById(int m_job_id);
     void killAllJobs();
 };
 
@@ -224,14 +224,14 @@ private:
 public:
     ~SmallShell();
     static SmallShell& getInstance();
-    Command* createCommand(const char* cmd_line);
+    Command* generateCommand(const char* cmd_line);
     void executeCommand(const char* cmd_line);
-    std::string getLastWorkingDir() const;
-    void setLastWorkingDir(const std::string& dir);
+    std::string getLastDir() const;
+    void setLastDir(const std::string& dir);
     std::string getPwd() const;
     std::string getPrompt() const;
     void setPrompt(const std::string& newPrompt);
-    void updateWorkingDirectory(const std::string& newDir);
+    void updateWorkingDir(const std::string& newDir);
     void setForegroundJob(int pid, const std::string& command);
     void clearForegroundJob();
     int getForegroundPid() const;
